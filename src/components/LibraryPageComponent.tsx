@@ -1,3 +1,13 @@
+interface GapiWindow {
+  gapi?: {
+    client?: {
+      getToken?: () => {
+        access_token?: string;
+      } | null;
+    };
+  };
+}
+
 /**
  * Copyright 2026 Google LLC
  *
@@ -78,11 +88,8 @@ export const LibraryPageComponent = defineComponent({
       );
     });
 
-    const fetchDriveImage = async (
-      template: Template & { _isLoadingImage?: boolean },
-      fileId: string,
-    ) => {
-      const token = (window as {gapi?: {client?: {getToken?: () => {access_token?: string}}}}).gapi?.client?.getToken()?.access_token;
+    const fetchDriveImage = async (template: Template & { _isLoadingImage?: boolean }, fileId: string) => {
+      const token = (window as unknown as GapiWindow).gapi?.client?.getToken()?.access_token;
       if (!token) {
         template.previewImage = 'https://placehold.co/400x300/e8eaed/5f6368?text=Sign+In+Required';
         if (!props.isSignedIn && !sheetError.value) {
@@ -126,7 +133,7 @@ export const LibraryPageComponent = defineComponent({
 
       const headers: HeadersInit = {};
       if (props.isSignedIn) {
-        const token = (window as {gapi?: {client?: {getToken?: () => {access_token?: string}}}}).gapi?.client?.getToken()?.access_token;
+        const token = (window as unknown as GapiWindow).gapi?.client?.getToken()?.access_token;
         if (token) {
           headers['Authorization'] = `Bearer ${token}`;
         }
@@ -183,7 +190,6 @@ export const LibraryPageComponent = defineComponent({
                 };
               }) as Array<Template & { _driveFileId?: string | null }>;
               sheetTemplates.splice(0, sheetTemplates.length, ...templates);
-
               for (const template of sheetTemplates as Array<Template & { _driveFileId?: string | null }>) {
                 if (template._driveFileId) {
                   fetchDriveImage(template, template._driveFileId);
@@ -207,7 +213,7 @@ export const LibraryPageComponent = defineComponent({
           }
         });
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : '';
+        const message = error instanceof Error ? error.message : String(error);
         if (!props.isSignedIn) {
           sheetError.value = 'Failed to fetch. Please sign in with Google if this is a private sheet.';
         } else {
@@ -503,7 +509,7 @@ export const LibraryPageComponent = defineComponent({
                   key={template.id}
                   class="material-card flex flex-col relative group aspect-[4/5] bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow p-4">
                   <div class="relative mb-4 ring-1 ring-black/5 rounded-md overflow-hidden aspect-[4/3] flex-shrink-0">
-                    {(template as { _isLoadingImage?: boolean })._isLoadingImage ? (
+                    {(template as Template & { _isLoadingImage?: boolean })._isLoadingImage ? (
                       <div class="w-full h-full flex items-center justify-center bg-gray-100">
                         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
                       </div>
@@ -578,7 +584,7 @@ export const LibraryPageComponent = defineComponent({
                         Edit
                       </button>
                       <span class="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max rounded bg-gray-800 px-2 py-1 text-xs font-medium text-white opacity-0 shadow transition-opacity group-hover/btn:opacity-100 z-10">
-                        Edit in Creation Center
+                        {template.id === 'ad-image-resizer' ? 'Open Single Resizer' : 'Edit in Creation Center'}
                       </span>
                     </div>
                   </div>

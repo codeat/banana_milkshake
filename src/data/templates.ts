@@ -524,4 +524,37 @@ Before finishing, verify:
       },
     ],
   },
+  {
+    id: 'ad-image-resizer',
+    name: 'Ad Image Resizer',
+    description: 'Intelligently adapt and resize product images to multiple standard ad sizes (970x250, 300x600, 300x250, 336x280).',
+    previewImage: 'https://placehold.co/400x300/e8f0fe/1967d2?text=Multi-Sizer',
+    aspect_ratio: '1:1',
+    genai_model: DEFAULT_IMAGE_MODEL,
+    steps: [
+      {
+        name: 'Step 1: Generate Base Image with Gemini',
+        text_prompt: `Intelligently adapt and resize the product from Asset 1 to perfectly fit the dimensions and layout suggested by Asset 2 (the placeholder). The final image must be a professional advertisement of the specified size.
+
+**Key Layout Rules:**
+* **Product Placement:** Keep the main product centered, sharp, and naturally integrated, preserving its original quality.
+* **Background:** Ensure the background fills the entire new dimensions seamlessly.
+* **Native Elements:** If Asset 1 contains existing logo and text overlays, rearrange these native elements and the layout to adapt to the new specified size.
+
+**Strict Restrictions:**
+* **No New Additions:** Apart from the native elements already present in Asset 1, do not add any new text overlays, logos, watermarks, or extra graphic elements.`,
+        image_slots: [
+          {asset_name: 'product_image', is_static: false},
+          {asset_name: 'placeholder', is_static: true},
+        ],
+        text_variables: [],
+      },
+      {
+        name: 'Step 2: Precisely Auto-Crop to Target Pixels',
+        text_prompt: 'System will automatically crop and fit the generated image perfectly to your selected sizes in Step 1.',
+        image_slots: [],
+        text_variables: [],
+      },
+    ],
+  },
 ];

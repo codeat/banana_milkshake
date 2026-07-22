@@ -130,11 +130,16 @@ export const BulkCreationPageComponent = defineComponent({
     };
 
     const resolutionOptions = computed(() => {
-      if (props.model && props.model.includes('3')) {
-        // assuming 'gemini-3...'
-        return ['1K', '2K', '4K'];
+      switch (props.model) {
+        case 'gemini-3.1-flash-image':
+          return ['512', '1K', '2K', '4K'];
+        case 'gemini-3-pro-image':
+          return ['1K', '2K', '4K'];
+        case 'gemini-3.1-flash-lite-image':
+        case 'gemini-2.5-flash-image':
+        default:
+          return ['1K'];
       }
-      return ['1K'];
     });
 
     return () => (

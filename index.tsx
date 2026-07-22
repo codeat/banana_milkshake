@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-import {computed, createApp, onMounted, ref} from 'vue';
+import {computed, createApp, onMounted, onUnmounted, ref} from 'vue';
 import {BulkCreationPageComponent} from './src/components/BulkCreationPageComponent';
+import {BulkResizingPageComponent} from './src/components/BulkResizingPageComponent';
 import {CreationPageComponent} from './src/components/CreationPageComponent';
+import {ResizingPageComponent} from './src/components/ResizingPageComponent';
 import {LibraryPageComponent} from './src/components/LibraryPageComponent';
 import {useBulkCreation} from './src/composables/useBulkCreation';
+import {useBulkResizing} from './src/composables/useBulkResizing';
 import {useGoogleDrive} from './src/composables/useGoogleDrive';
 import {DEFAULT_IMAGE_MODEL} from './src/constants';
 import {Template} from './src/types';
@@ -51,6 +54,12 @@ const App = {
       previewImageUrl.value = null;
     };
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && previewImageUrl.value) {
+        closePreview();
+      }
+    };
+
     // Note: useGoogleDrive might mistakenly have 'initialize' typed as taking config from the previous step?
     // Let's check useGoogleDrive signature.
     // It returns 'initialize'.
@@ -72,6 +81,7 @@ const App = {
     });
 
     onMounted(async () => {
+      window.addEventListener('keydown', handleKeyDown);
       try {
         const config = await fetchConfig();
         initializeDrive(config);
@@ -82,24 +92,114 @@ const App = {
       }
     });
 
+    onUnmounted(() => {
+      window.removeEventListener('keydown', handleKeyDown);
+    });
+
     // --- BULK CREATION LOGIC ---
     const {
-      bulkJobs,
-      isBulkProcessing,
-      isBulkDownloading,
-      bulkConcurrency,
-      bulkProgress,
-      bulkCompletedCount,
-      bulkSuccessCount,
-      bulkTemperature,
-      bulkGenaiModel,
+      bulkJobs: creationJobs,
+      isBulkProcessing: isCreationProcessing,
+      isBulkDownloading: isCreationDownloading,
+      bulkConcurrency: creationConcurrency,
+      bulkProgress: creationProgress,
+      bulkCompletedCount: creationCompletedCount,
+      bulkSuccessCount: creationSuccessCount,
+      bulkTemperature: creationTemperature,
+      bulkGenaiModel: creationGenaiModel,
       bulkAspectRatio,
       bulkResolution,
-      handleBulkFileUpload,
-      startBulkGeneration,
-      downloadBulkZip,
-      rerunSelectedJobs,
+      handleBulkFileUpload: handleCreationFileUpload,
+      startBulkGeneration: startCreationGeneration,
+      downloadBulkZip: downloadCreationZip,
+      rerunSelectedJobs: rerunCreationJobs,
     } = useBulkCreation(currentTemplateForBulk, getTemplateAssets);
+
+    // --- BULK RESIZING LOGIC ---
+    const {
+      bulkJobs: resizingJobs,
+      isBulkProcessing: isResizingProcessing,
+      isBulkDownloading: isResizingDownloading,
+      bulkProgress: resizingProgress,
+      bulkCompletedCount: resizingCompletedCount,
+      bulkSuccessCount: resizingSuccessCount,
+      bulkGenaiModel: resizingGenaiModel,
+      handleBulkFileUpload: handleResizingFileUpload,
+      startBulkGeneration: startResizingGeneration,
+      downloadBulkZip: downloadResizingZip,
+      rerunSelectedJobs: rerunResizingJobs,
+      updateSelectedSizes: updateResizingSizes,
+    } = useBulkResizing();
+
+    const isResizer = computed(() => currentTemplateForBulk.value?.id === 'ad-image-resizer');
+
+    const bulkJobs = computed(() => isResizer.value ? resizingJobs : creationJobs);
+    const isBulkProcessing = computed(() => isResizer.value ? isResizingProcessing.value : isCreationProcessing.value);
+    const isBulkDownloading = computed(() => isResizer.value ? isResizingDownloading.value : isCreationDownloading.value);
+    const bulkProgress = computed(() => isResizer.value ? resizingProgress.value : creationProgress.value);
+    const bulkCompletedCount = computed(() => isResizer.value ? resizingCompletedCount.value : creationCompletedCount.value);
+    const bulkSuccessCount = computed(() => isResizer.value ? resizingSuccessCount.value : creationSuccessCount.value);
+    const bulkConcurrency = computed({
+      get: () => creationConcurrency.value,
+      set: (val) => {
+        creationConcurrency.value = val;
+      }
+    });
+    const bulkTemperature = computed({
+      get: () => creationTemperature.value,
+      set: (val) => {
+        creationTemperature.value = val;
+      }
+    });
+
+    const bulkGenaiModel = computed({
+      get: () => isResizer.value ? resizingGenaiModel.value : creationGenaiModel.value,
+      set: (val) => {
+        if (isResizer.value) {
+          resizingGenaiModel.value = val;
+        } else {
+          creationGenaiModel.value = val;
+        }
+      }
+    });
+
+    const handleBulkFileUpload = (file: File, sizes?: Record<string, boolean>) => {
+      if (isResizer.value) {
+        handleResizingFileUpload(file, sizes || {});
+      } else {
+        handleCreationFileUpload(file);
+      }
+    };
+
+    const startBulkGeneration = (sizes?: Record<string, boolean>) => {
+      if (isResizer.value) {
+        startResizingGeneration(sizes || {});
+      } else {
+        startCreationGeneration();
+      }
+    };
+
+    const downloadBulkZip = () => {
+      if (isResizer.value) {
+        downloadResizingZip();
+      } else {
+        downloadCreationZip();
+      }
+    };
+
+    const rerunSelectedJobs = (sizes?: Record<string, boolean>) => {
+      if (isResizer.value) {
+        rerunResizingJobs(sizes || {});
+      } else {
+        rerunCreationJobs();
+      }
+    };
+
+    const handleUpdateSizes = (sizes: Record<string, boolean>) => {
+      if (isResizer.value) {
+        updateResizingSizes(sizes);
+      }
+    };
 
     const switchPage = (page: string) => {
       currentPage.value = page;
@@ -112,6 +212,7 @@ const App = {
         switchPage('creation');
       } else {
         // 'use'
+
         currentTemplateForBulk.value = template;
         switchPage('experiment');
       }
@@ -168,9 +269,15 @@ const App = {
         case 'library':
           return LibraryPageComponent;
         case 'experiment':
+          if (currentTemplateForBulk.value?.id === 'ad-image-resizer') {
+            return BulkResizingPageComponent;
+          }
           return BulkCreationPageComponent;
         case 'creation':
         default:
+          if (currentTemplateForCreation.value?.id === 'ad-image-resizer') {
+            return ResizingPageComponent;
+          }
           return CreationPageComponent;
       }
     });
@@ -214,6 +321,7 @@ const App = {
       startBulkGeneration,
       downloadBulkZip,
       rerunSelectedJobs,
+      handleUpdateSizes,
     };
   },
   template: `
@@ -311,13 +419,14 @@ const App = {
             @start-generation="startBulkGeneration"
             @download-zip="downloadBulkZip"
             @rerun-selected="rerunSelectedJobs"
+            @update-sizes="handleUpdateSizes"
         />
     </main>
 
     <!-- Image Preview Modal -->
     <div v-if="previewImageUrl" @click="closePreview" class="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4 transition-opacity duration-300" style="backdrop-filter: blur(4px);">
-        <div @click.stop class="relative max-w-4xl max-h-[90vh] w-full h-full">
-            <img :src="previewImageUrl" class="object-contain w-full h-full rounded-lg shadow-2xl">
+        <div @click.stop class="relative">
+            <img :src="previewImageUrl" class="rounded-lg shadow-2xl max-w-4xl max-h-[90vh]">
             <button @click="closePreview" class="absolute -top-3 -right-3 md:-top-4 md:-right-4 bg-white rounded-full p-2 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>

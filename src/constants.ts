@@ -42,9 +42,10 @@ export const DEFAULT_IMAGE_MODEL =
  */
 export const SUPPORTED_IMAGE_MODELS: string[] = (process.env
   .SUPPORTED_IMAGE_MODEL as unknown as string[]) || [
+  'gemini-3.1-flash-lite-image',
+  'gemini-3.1-flash-image',
+  'gemini-3-pro-image',
   'gemini-2.5-flash-image',
-  'gemini-3-pro-image-preview',
-  'gemini-3.1-flash-image-preview',
 ];
 
 /**

@@ -240,7 +240,12 @@ app.post('/generate-content', async (req, res) => {
   } catch (error) {
     console.error('API call error:', error);
     console.error('Error Req body:', req.body);
-    if (error.response) {
+    if (error.status) {
+      res.status(error.status).json({
+        status: error.status,
+        message: error.message || 'Error from GenAI SDK'
+      });
+    } else if (error.response) {
       const errorData = {
         status: error.response.status,
         message: error.response.data?.error?.message || 'Error from upstream API',

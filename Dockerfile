@@ -33,6 +33,7 @@ RUN mkdir dist
 RUN bash -c 'if [ -f package.json ]; then npm install && npm run build; fi'
 
 
+
 # Stage 2: Build the final server image
 FROM node:22
 

@@ -487,7 +487,15 @@ export function useBulkCreation(
       job.error = null;
       job.selected = false;
     });
-    await startBulkGeneration();
+
+    isBulkProcessing.value = true;
+    for (const job of jobsToRerun) {
+      if (!isBulkProcessing.value) {
+        break;
+      }
+      await generateImageForRow(job);
+    }
+    isBulkProcessing.value = false;
   };
 
   const downloadBulkZip = async () => {
