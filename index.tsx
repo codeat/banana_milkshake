@@ -422,6 +422,11 @@ const App = {
             @update-sizes="handleUpdateSizes"
         />
     </main>
+    <footer class="bg-surface border-t border-outline py-4 px-4 sm:px-6 lg:px-8 mt-auto">
+        <div class="max-w-7xl mx-auto text-center text-xs text-on-surface-variant">
+            <p><strong>Note:</strong> AI was used to edit or generate assets for your ads. As per Google policy, advertisers are ultimately responsible for ensuring their ads and assets contain all required disclosures based on applicable local laws and regulations.</p>
+        </div>
+    </footer>
 
     <!-- Image Preview Modal -->
     <div v-if="previewImageUrl" @click="closePreview" class="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4 transition-opacity duration-300" style="backdrop-filter: blur(4px);">
