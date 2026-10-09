@@ -244,7 +244,6 @@ export function t(key: keyof typeof messages['zh']): string {
 export function getModelDisplayName(model: string): string {
   const lang = currentLanguage.value;
   const mapZh: Record<string, string> = {
-    'models/gempix-3': 'models/gempix-3 (Nano Banana 3 · 旗舰生图)',
     'gemini-nano-banana-2.1': 'gemini-nano-banana-2.1 (默认首选 · 新一代旗舰)',
     'gemini-3.1-flash-image': 'gemini-3.1-flash-image (极速高清生图)',
     'gemini-3-pro-image': 'gemini-3-pro-image (旗舰 · 影视级高精画质)',
@@ -252,7 +251,6 @@ export function getModelDisplayName(model: string): string {
     'gemini-2.5-flash-image': 'gemini-2.5-flash-image (兼容基准 · 经典模型)',
   };
   const mapEn: Record<string, string> = {
-    'models/gempix-3': 'models/gempix-3 (Nano Banana 3 · Flagship)',
     'gemini-nano-banana-2.1': 'gemini-nano-banana-2.1 (Default · Next-Gen Flagship)',
     'gemini-3.1-flash-image': 'gemini-3.1-flash-image (Ultra Fast & HD)',
     'gemini-3-pro-image': 'gemini-3-pro-image (Flagship · Studio Quality)',

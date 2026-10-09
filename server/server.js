@@ -284,23 +284,10 @@ app.post('/generate-content', async (req, res) => {
 
   const callVertexWithFallback = async () => {
     const normalizedModel = model.replace(/^models\//, '');
-    try {
-      return await ai.models.generateContent({
-        ...sdkPayload,
-        model: normalizedModel,
-      });
-    } catch (innerErr) {
-      if (
-        (model === 'models/gempix-3' || model === 'gempix-3') &&
-        (innerErr.status === 404 || innerErr.response?.status === 404 || String(innerErr.message).includes('404'))
-      ) {
-        return await ai.models.generateContent({
-          ...sdkPayload,
-          model: 'gemini-nano-banana-2.1',
-        });
-      }
-      throw innerErr;
-    }
+    return await ai.models.generateContent({
+      ...sdkPayload,
+      model: normalizedModel,
+    });
   };
 
   try {

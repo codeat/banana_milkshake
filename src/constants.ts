@@ -42,7 +42,6 @@ export const DEFAULT_IMAGE_MODEL =
  */
 export const SUPPORTED_IMAGE_MODELS: string[] = (process.env
   .SUPPORTED_IMAGE_MODEL as unknown as string[]) || [
-  'models/gempix-3',
   'gemini-nano-banana-2.1',
   'gemini-3.1-flash-image',
   'gemini-3-pro-image',

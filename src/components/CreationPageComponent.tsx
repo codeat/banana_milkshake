@@ -1248,8 +1248,8 @@ export const CreationPageComponent = defineComponent({
                             <span class="text-xs font-bold text-amber-950 flex items-center gap-1 shrink-0 whitespace-nowrap">
                               <span>
                                 {currentLanguage.value === 'zh'
-                                  ? '✨ 100% 透明底品牌 Logo 矩阵 (Nano Banana 3 · models/gempix-3 生成，点击缩略图一键选用):'
-                                  : '✨ 100% Transparent Brand Logo Matrix (Nano Banana 3 · models/gempix-3):'}
+                                  ? '✨ 100% 透明底品牌 Logo 矩阵 (点击缩略图一键选用):'
+                                  : '✨ 100% Transparent Brand Logo Matrix (1-Click Select):'}
                               </span>
                             </span>
                           </div>
@@ -1376,7 +1376,7 @@ export const CreationPageComponent = defineComponent({
                                 />
                                 {index === 1 && (
                                   <span class="mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
-                                    ✨ 100% 透明背景 PNG (Alpha=0 · 无底框 · models/gempix-3)
+                                    ✨ 100% 透明背景 PNG (Alpha=0 · 边缘无白框)
                                   </span>
                                 )}
                               </>
