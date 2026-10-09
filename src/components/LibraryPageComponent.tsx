@@ -29,6 +29,7 @@ import {APP_FOLDER_NAME} from '../constants';
 import {TEMPLATES} from '../data/templates';
 import {Template} from '../types';
 import Papa from 'papaparse';
+import {t, currentLanguage} from '../i18n';
 
 /**
  * A Vue component for displaying and managing a library of templates.
@@ -296,7 +297,10 @@ export const LibraryPageComponent = defineComponent({
     return () => (
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         <div class="flex justify-between mt-5 gap-6">
-          <h2 class="text-2xl font-bold text-gray-800">Template Library</h2>
+          <div>
+            <h2 class="text-2xl font-bold text-gray-800">{t('libraryTitle')}</h2>
+            <p class="text-sm text-gray-500 mt-1">{t('librarySubtitle')}</p>
+          </div>
           {activeTab.value !== 'sheets' && (
             <button
               onClick={() => emit('create-new')}
@@ -313,7 +317,7 @@ export const LibraryPageComponent = defineComponent({
                   d="M12 4v16m8-8H4"
                 />
               </svg>
-              Create New Template
+              {t('createNewTemplate')}
             </button>
           )}
         </div>
@@ -328,7 +332,7 @@ export const LibraryPageComponent = defineComponent({
                     ? 'border-indigo-500 text-indigo-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}>
-                Built-in Templates
+                {t('tabBuiltin')}
               </button>
               <button
                 onClick={() => (activeTab.value = 'sheets')}
@@ -337,7 +341,7 @@ export const LibraryPageComponent = defineComponent({
                     ? 'border-indigo-500 text-indigo-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}>
-                My Templates (Google Sheets)
+                {t('tabSheets')}
               </button>
               <button
                 onClick={() => (activeTab.value = 'drive')}
@@ -346,7 +350,7 @@ export const LibraryPageComponent = defineComponent({
                     ? 'border-indigo-500 text-indigo-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}>
-                My Templates (Google Drive)
+                {t('tabDrive')}
               </button>
             </nav>
           </div>
@@ -404,7 +408,7 @@ export const LibraryPageComponent = defineComponent({
                 type="text"
                 v-model={searchQuery.value}
                 class="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2"
-                placeholder="Search templates..."
+                placeholder={t('searchPlaceholder')}
               />
             </div>
           </div>
@@ -571,20 +575,20 @@ export const LibraryPageComponent = defineComponent({
                       <button
                         onClick={() => emit('use-template', template, 'use')}
                         class="material-button material-button-primary w-full">
-                        Use
+                        {t('useTemplate')}
                       </button>
                       <span class="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max rounded bg-gray-800 px-2 py-1 text-xs font-medium text-white opacity-0 shadow transition-opacity group-hover/btn:opacity-100 z-10">
-                        Use in Bulk
+                        {currentLanguage.value === 'zh' ? '在批量实验中心选用' : 'Use in Bulk'}
                       </span>
                     </div>
                     <div class="group/btn relative">
                       <button
                         onClick={() => emit('use-template', template, 'edit')}
                         class="material-button material-button-secondary">
-                        Edit
+                        {t('customizeTemplate')}
                       </button>
                       <span class="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max rounded bg-gray-800 px-2 py-1 text-xs font-medium text-white opacity-0 shadow transition-opacity group-hover/btn:opacity-100 z-10">
-                        {template.id === 'ad-image-resizer' ? 'Open Single Resizer' : 'Edit in Creation Center'}
+                        {template.id === 'ad-image-resizer' ? (currentLanguage.value === 'zh' ? '打开单图尺寸重构' : 'Open Single Resizer') : (currentLanguage.value === 'zh' ? '在创作中心编辑' : 'Edit in Creation Center')}
                       </span>
                     </div>
                   </div>

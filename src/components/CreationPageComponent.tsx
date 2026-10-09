@@ -32,6 +32,7 @@ import {
   TemplateStep,
   TextVariable,
 } from '../types';
+import {t, currentLanguage} from '../i18n';
 
 /**
  * A Vue component for creating and editing templates.
@@ -512,11 +513,11 @@ export const CreationPageComponent = defineComponent({
             {/* Top Section: Settings */}
             <div class="material-card">
               <div class="flex justify-between items-center mb-6">
-                <h2 class="text-lg font-bold">Template Settings</h2>
+                <h2 class="text-lg font-bold">{t('templateSettings')}</h2>
                 <button
                   onClick={() => emit('change-template')}
                   class="text-sm text-primary font-medium hover:underline">
-                  &larr; Back to Library
+                  {currentLanguage.value === 'zh' ? '← 返回模板库' : '← Back to Library'}
                 </button>
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -524,7 +525,7 @@ export const CreationPageComponent = defineComponent({
                   <label
                     for="templateName"
                     class="block text-sm font-medium text-on-surface-variant mb-1">
-                    Template Name
+                    {t('templateName')}
                   </label>
                   <input
                     type="text"
@@ -536,12 +537,12 @@ export const CreationPageComponent = defineComponent({
                       ).value)
                     }
                     class="material-input bg-white"
-                    placeholder="e.g., Product Lifestyle Shot"
+                    placeholder={currentLanguage.value === 'zh' ? '例如：高端美妆产品大片' : 'e.g., Product Lifestyle Shot'}
                   />
                 </div>
                 <div>
                   <label class="block text-sm font-medium text-on-surface-variant mb-1">
-                    GenAI Model
+                    {t('model')}
                   </label>
                   <select
                     value={genaiModel.value}
@@ -558,7 +559,7 @@ export const CreationPageComponent = defineComponent({
                 </div>
                 <div>
                   <label class="block text-sm font-medium text-on-surface-variant mb-1">
-                    Final Aspect Ratio
+                    {t('aspectRatio')}
                   </label>
                   <select
                     value={aspectRatio.value}
@@ -566,17 +567,17 @@ export const CreationPageComponent = defineComponent({
                       (aspectRatio.value = (e.target as HTMLInputElement).value)
                     }
                     class="material-input bg-white">
-                    <optgroup label="Square">
+                    <optgroup label={currentLanguage.value === 'zh' ? '正方形 (1:1)' : 'Square'}>
                       <option>1:1</option>
                     </optgroup>
-                    <optgroup label="Landscape">
+                    <optgroup label={currentLanguage.value === 'zh' ? '横屏比例 (Landscape)' : 'Landscape'}>
                       <option>21:9</option>
                       <option>16:9</option>
                       <option>3:2</option>
                       <option>4:3</option>
                       <option>5:4</option>
                     </optgroup>
-                    <optgroup label="Portrait">
+                    <optgroup label={currentLanguage.value === 'zh' ? '竖屏比例 (Portrait)' : 'Portrait'}>
                       <option>9:16</option>
                       <option>2:3</option>
                       <option>3:4</option>
@@ -586,7 +587,7 @@ export const CreationPageComponent = defineComponent({
                 </div>
                 <div>
                   <label class="block text-sm font-medium text-on-surface-variant mb-1">
-                    Preview Image
+                    {t('previewImage')}
                   </label>
                   <label
                     for="preview-image-file"
@@ -663,7 +664,7 @@ export const CreationPageComponent = defineComponent({
                       />
                     </svg>
                   )}
-                  {props.isSaving ? 'Saving...' : 'Save Template to Drive'}
+                  {props.isSaving ? t('saving') : t('saveTemplate')}
                 </button>
               </div>
             </div>
@@ -712,7 +713,7 @@ export const CreationPageComponent = defineComponent({
                       }
                       class="material-input bg-white"
                       rows={3}
-                      placeholder="Describe the change... e.g., use asset1, asset2 and {{CTA}} etc. for images and text"></textarea>
+                      placeholder={t('promptPlaceholder')}></textarea>
 
                     <div class="text-right mt-2 text-sm">
                       {step.isGeneratingPrompt ? (
@@ -734,7 +735,7 @@ export const CreationPageComponent = defineComponent({
                               fill="currentColor"
                               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
-                          Generating...
+                          {t('generatingPrompt')}
                         </span>
                       ) : (
                         <a
@@ -744,7 +745,7 @@ export const CreationPageComponent = defineComponent({
                             helpMeWritePrompt(step);
                           }}
                           class="text-primary font-medium hover:underline">
-                          Help me write the prompt
+                          {t('helpPrompt')}
                         </a>
                       )}
                     </div>
@@ -918,7 +919,7 @@ export const CreationPageComponent = defineComponent({
                       <button
                         onClick={() => addImageSlot(index)}
                         class="material-button material-button-secondary w-full mt-4 text-sm py-2">
-                        Add Image
+                        {t('addImageSlot')}
                       </button>
                     )}
 
@@ -959,8 +960,8 @@ export const CreationPageComponent = defineComponent({
                           </svg>
                         )}
                         {results[step.id]?.isLoading
-                          ? 'Running...'
-                          : 'Run Step'}
+                          ? t('running')
+                          : t('runStep')}
                       </button>
                     </div>
                   </div>
@@ -981,7 +982,7 @@ export const CreationPageComponent = defineComponent({
                       d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                     />
                   </svg>
-                  Add Step
+                  {t('addStep')}
                 </button>
               </div>
 
@@ -990,7 +991,7 @@ export const CreationPageComponent = defineComponent({
                 {Object.values(results).map((result: StepResult) => (
                   <div key={result.id} class="material-card">
                     <h2 class="text-lg font-bold mb-4">
-                      Result: <span class="font-medium">{result.title}</span>
+                      {t('stepResult')}: <span class="font-medium">{result.title}</span>
                     </h2>
                     <div class="aspect-square bg-gray-100 rounded-lg flex items-center justify-center p-2">
                       {result.isLoading ? (
@@ -1013,7 +1014,7 @@ export const CreationPageComponent = defineComponent({
                               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
                           <p class="mt-2 text-sm text-on-surface-variant">
-                            Generating...
+                            {t('running')}
                           </p>
                         </div>
                       ) : result.imageUrl ? (
@@ -1049,7 +1050,7 @@ export const CreationPageComponent = defineComponent({
                         </p>
                       ) : (
                         <p class="text-on-surface-variant text-sm text-center">
-                          Output will appear here
+                          {t('outputPlaceholder')}
                         </p>
                       )}
                     </div>

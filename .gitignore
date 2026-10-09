@@ -8,3 +8,9 @@ node_modules/
 dist/
 dist-ssr/
 *.local
+.deck_id
+*.pptx
+test_evidence/
+server/dist
+.env
+server/.env

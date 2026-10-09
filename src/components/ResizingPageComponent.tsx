@@ -14,6 +14,7 @@ import {
 import {PLACEHOLDERS} from '../data/placeholders';
 import {ai, callGenAIApi} from '../services/ai';
 import {Template} from '../types';
+import {t, currentLanguage} from '../i18n';
 
 /**
  * A component that allows users to intelligently resize and adapt product images
@@ -254,29 +255,32 @@ export const ResizingPageComponent = defineComponent({
         <div class="flex flex-col space-y-8">
           {/* Settings Section */}
           <div class="flex justify-between items-center mb-2">
-            <h2 class="text-xl font-bold">Ad Image Resizer</h2>
+            <div>
+              <h2 class="text-xl font-bold">{t('resizerTitle')}</h2>
+              <p class="text-xs text-gray-500 mt-1">{t('resizerSubtitle')}</p>
+            </div>
             <div class="flex items-center space-x-4">
               <button
                 onClick={runAllSelected}
                 class="material-button material-button-primary"
                 disabled={!productImagePreview.value}>
-                Run Resizer
+                {t('startResizing')}
               </button>
               <button
                 onClick={() => emit('change-template')}
                 class="text-sm text-primary font-medium hover:underline">
-                &larr; Back to Library
+                {currentLanguage.value === 'zh' ? '← 返回模板库' : '← Back to Library'}
               </button>
             </div>
           </div>
 
           {/* Step 1: Gemini 生成图片 */}
           <div class="material-card">
-            <div class="step-title">Step 1: Generate Base Image with Gemini</div>
+            <div class="step-title">{currentLanguage.value === 'zh' ? '步骤 1: 使用 Gemini 生成基础多模态图像' : 'Step 1: Generate Base Image with Gemini'}</div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div>
                 <label class="block text-sm font-medium text-on-surface-variant mb-1">
-                  GenAI Model
+                  {t('model')}
                 </label>
                 <select
                   value={genaiModel.value}
@@ -284,16 +288,11 @@ export const ResizingPageComponent = defineComponent({
                     (genaiModel.value = (e.target as HTMLInputElement).value)
                   }
                   class="material-input bg-white">
-                  {supportedModels.map((model) => {
-                    const isSupported =
-                      model === 'gemini-3.1-flash-image' ||
-                      model === 'gemini-3.1-flash-lite-image';
-                    return (
-                      <option key={model} value={model} disabled={!isSupported}>
-                        {model}
-                      </option>
-                    );
-                  })}
+                  {supportedModels.map((model) => (
+                    <option key={model} value={model}>
+                      {model}
+                    </option>
+                  ))}
                 </select>
               </div>
 

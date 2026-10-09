@@ -23,7 +23,7 @@ declare const process: {env: Record<string, string | undefined>};
  * It is configured with an API key obtained from environment variables.
  */
 export const ai = new GoogleGenAI({
-  apiKey: process.env.API_KEY || '',
+  apiKey: process.env.API_KEY || 'PLACEHOLDER_KEY',
 });
 
 /**

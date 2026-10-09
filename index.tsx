@@ -25,6 +25,7 @@ import {useBulkResizing} from './src/composables/useBulkResizing';
 import {useGoogleDrive} from './src/composables/useGoogleDrive';
 import {DEFAULT_IMAGE_MODEL} from './src/constants';
 import {Template} from './src/types';
+import {t, currentLanguage, toggleLanguage} from './src/i18n';
 
 declare const process: {env: {[key: string]: string | undefined}};
 // --- HELPERS ---
@@ -322,6 +323,9 @@ const App = {
       downloadBulkZip,
       rerunSelectedJobs,
       handleUpdateSizes,
+      t,
+      currentLanguage,
+      toggleLanguage,
     };
   },
   template: `
@@ -339,25 +343,27 @@ const App = {
 
                 <!-- Desktop Navigation -->
                 <nav class="hidden md:flex items-center space-x-2">
-                    <div @click="switchPage('creation')" class="nav-item" :class="{active: currentPage === 'creation'}">Creation Center</div>
-                    <div @click="switchPage('library')" class="nav-item" :class="{active: currentPage === 'library'}">Template Library</div>
-                    <div @click="switchPage('experiment')" class="nav-item" :class="{active: currentPage === 'experiment'}">Bulk Creation</div>
+                    <div @click="switchPage('creation')" class="nav-item" :class="{active: currentPage === 'creation'}">{{ t('creationCenter') }}</div>
+                    <div @click="switchPage('library')" class="nav-item" :class="{active: currentPage === 'library'}">{{ t('templateLibrary') }}</div>
+                    <div @click="switchPage('experiment')" class="nav-item" :class="{active: currentPage === 'experiment'}">{{ t('bulkCreation') }}</div>
                 </nav>
 
-                <!-- Auth Button (Desktop) -->
-                <div class="hidden md:flex items-center" id="auth-container">
-                    <button v-if="!isSignedIn" @click="signIn" class="material-button material-button-secondary">Sign In with Google</button>
-                    <button v-if="isSignedIn" @click="signOut" class="material-button material-button-secondary">Sign Out</button>
+                <!-- Auth & Language Toggle (Desktop) -->
+                <div class="hidden md:flex items-center space-x-3" id="auth-container">
+                    <button @click="toggleLanguage" class="material-button material-button-secondary text-xs px-3 py-1.5 flex items-center gap-1 font-medium bg-gray-50 border border-gray-300 hover:bg-gray-100 transition-colors">
+                        <span>🌐</span>
+                        <span>{{ currentLanguage === 'zh' ? 'English' : '简体中文' }}</span>
+                    </button>
+                    <button v-if="!isSignedIn" @click="signIn" class="material-button material-button-secondary">{{ t('signIn') }}</button>
+                    <button v-if="isSignedIn" @click="signOut" class="material-button material-button-secondary">{{ t('signOut') }}</button>
                 </div>
                 <!-- Mobile Menu Button -->
                 <div class="md:hidden flex items-center">
                     <button @click="toggleMobileMenu" type="button" class="inline-flex items-center justify-center p-2 rounded-md text-on-surface-variant hover:text-on-surface hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary" aria-controls="mobile-menu" aria-expanded="false">
                         <span class="sr-only">Open main menu</span>
-                        <!-- Icon when menu is closed. -->
                         <svg v-if="!isMobileMenuOpen" class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
-                        <!-- Icon when menu is open. -->
                         <svg v-else class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -369,13 +375,17 @@ const App = {
         <!-- Mobile menu, show/hide based on menu state. -->
         <div v-if="isMobileMenuOpen" class="md:hidden" id="mobile-menu">
             <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-surface border-b border-outline">
-                <div @click="switchPage('creation')" class="mobile-nav-item" :class="{active: currentPage === 'creation'}">Creation Center</div>
-                <div @click="switchPage('library')" class="mobile-nav-item" :class="{active: currentPage === 'library'}">Template Library</div>
-                <div @click="switchPage('experiment')" class="mobile-nav-item" :class="{active: currentPage === 'experiment'}">Bulk Creation</div>
+                <div @click="switchPage('creation')" class="mobile-nav-item" :class="{active: currentPage === 'creation'}">{{ t('creationCenter') }}</div>
+                <div @click="switchPage('library')" class="mobile-nav-item" :class="{active: currentPage === 'library'}">{{ t('templateLibrary') }}</div>
+                <div @click="switchPage('experiment')" class="mobile-nav-item" :class="{active: currentPage === 'experiment'}">{{ t('bulkCreation') }}</div>
                 <div class="border-t border-outline my-2"></div>
-                <div class="px-2 py-2">
-                     <button v-if="!isSignedIn" @click="signIn" class="material-button material-button-secondary w-full">Sign In with Google</button>
-                     <button v-if="isSignedIn" @click="signOut" class="material-button material-button-secondary w-full">Sign Out</button>
+                <div class="px-2 py-2 space-y-2">
+                     <button @click="toggleLanguage" class="material-button material-button-secondary w-full text-xs py-2 flex items-center justify-center gap-1">
+                         <span>🌐</span>
+                         <span>切换语言: {{ currentLanguage === 'zh' ? 'English' : '简体中文' }}</span>
+                     </button>
+                     <button v-if="!isSignedIn" @click="signIn" class="material-button material-button-secondary w-full">{{ t('signIn') }}</button>
+                     <button v-if="isSignedIn" @click="signOut" class="material-button material-button-secondary w-full">{{ t('signOut') }}</button>
                 </div>
             </div>
         </div>
@@ -424,7 +434,7 @@ const App = {
     </main>
     <footer class="bg-surface border-t border-outline py-4 px-4 sm:px-6 lg:px-8 mt-auto">
         <div class="max-w-7xl mx-auto text-center text-xs text-on-surface-variant">
-            <p><strong>Note:</strong> AI was used to edit or generate assets for your ads. As per Google policy, advertisers are ultimately responsible for ensuring their ads and assets contain all required disclosures based on applicable local laws and regulations.</p>
+            <p>{{ t('footerDisclaimer') }}</p>
         </div>
     </footer>
 

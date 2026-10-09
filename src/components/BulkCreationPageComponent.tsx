@@ -17,6 +17,7 @@
 import {PropType, computed, defineComponent, ref, watch} from 'vue';
 import {SUPPORTED_IMAGE_MODELS} from '../constants';
 import {BulkJob, Template, TemplateStep} from '../types';
+import {t, currentLanguage} from '../i18n';
 
 /**
  * A Vue component for the bulk image creation page.
@@ -160,17 +161,16 @@ export const BulkCreationPageComponent = defineComponent({
               />
             </svg>
             <h2 class="mt-4 text-2xl font-bold text-on-surface">
-              Select a Template to Begin
+              {currentLanguage.value === 'zh' ? '请先选择一个模板以启动批量生成' : 'Select a Template to Begin'}
             </h2>
             <p class="mt-2 text-md text-on-surface-variant max-w-lg mx-auto">
-              To start a bulk creation job, please go to the library and choose
-              a template to use.
+              {currentLanguage.value === 'zh' ? '批量生成任务需要基于特定模板进行参数化批量填充，请前往模板库挑选。' : 'To start a bulk creation job, please go to the library and choose a template to use.'}
             </p>
             <div class="mt-8">
               <button
                 onClick={() => emit('change-template')}
                 class="material-button material-button-primary">
-                Go to Template Library
+                {currentLanguage.value === 'zh' ? '前往广告模板库挑选' : 'Go to Template Library'}
               </button>
             </div>
           </div>
@@ -179,7 +179,7 @@ export const BulkCreationPageComponent = defineComponent({
             {/* Left Column: Setup */}
             <div class="lg:col-span-1 space-y-6 sticky top-[80px]">
               <div class="material-card">
-                <h2 class="text-lg font-bold mb-4">1. Selected Template</h2>
+                <h2 class="text-lg font-bold mb-4">{currentLanguage.value === 'zh' ? '1. 当前选用模板' : '1. Selected Template'}</h2>
                 <div class="p-4 border border-outline rounded-lg flex items-center">
                   <img
                     src={props.selectedTemplate.previewImage}
@@ -195,13 +195,13 @@ export const BulkCreationPageComponent = defineComponent({
                         emit('change-template');
                       }}
                       class="text-sm text-primary font-medium">
-                      Change template
+                      {currentLanguage.value === 'zh' ? '更换模板' : 'Change template'}
                     </a>
                   </div>
                 </div>
               </div>
               <div class="material-card">
-                <h2 class="text-lg font-bold mb-4">2. Upload Data</h2>
+                <h2 class="text-lg font-bold mb-4">{currentLanguage.value === 'zh' ? '2. 上传数据集 (CSV)' : '2. Upload Data'}</h2>
                 <input
                   type="file"
                   onChange={handleFileUpload}
