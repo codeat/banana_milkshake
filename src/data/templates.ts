@@ -38,12 +38,15 @@ export const TEMPLATES: Template[] = [
       {
         name: 'Step 1: Generate Street Snap',
         text_prompt: `Generate a high-resolution editorial fashion photograph.
-Extract the primary product from asset1. Determine the product category Men's Wear Women's Wear or Costume and the intended gender.
-Enhance the product's appearance to look like high-quality real-world materials with realistic textures and stitching.
-Background Scene: A dynamic realistic urban street a modern city intersection or a concrete-and-glass commercial area. The scene should be slightly blurred or out of focus to keep the product sharp and prominent. MUST: Expand the generated background to fill the entire landscape frame. DO NOT reuse the model pose or exact background from the input asset1.
-Model Pose: The model is captured mid-stride or paused naturally in the city scene with a confident effortless pose that clearly displays the garment's silhouette and length.
-Facial Expression: A neutral-to-serious powerful expression a confident direct gaze at the camera or a strong profile.
-Art Style: Clean crisp editorial street photography. Use bright even professional lighting to eliminate harsh shadows and make the garment's color and features pop against the urban backdrop. Composition is minimalist well-framed and emphasizes the product's design detail
+Extract the primary product from asset1.
+Product Handling & Model Integration:
+- If asset1 is clothing or apparel (e.g. coats, jackets, shirts, pants, dresses): The model wears the garment naturally to showcase its silhouette, drape, and texture.
+- If asset1 is footwear: The model wears the shoes on their feet while walking.
+- If asset1 is a fragrance, perfume bottle, cosmetic, beverage cup, or handheld item: The model holds or showcases the product gracefully in their hand (CRITICAL: NEVER wear bottles, cosmetics, or non-clothing items around the neck as pendants or necklaces!).
+Background Scene: A dynamic realistic urban street, a modern city intersection or a concrete-and-glass commercial area. The scene should be slightly blurred or out of focus to keep the product sharp and prominent. MUST: Expand the generated background to fill the entire landscape frame. DO NOT reuse the model pose or exact background from the input asset1.
+Model Pose: The model is captured mid-stride or paused naturally in the city scene with a confident effortless commercial pose.
+Facial Expression: A neutral-to-serious powerful expression, a confident direct gaze at the camera or a strong profile.
+Art Style: Clean crisp editorial street photography. Use bright even professional lighting to eliminate harsh shadows and make the product's color and features pop against the urban backdrop. Composition is minimalist well-framed and emphasizes the product's design detail.
 `,
         image_slots: [{asset_name: 'asset1', is_static: false}],
         text_variables: [],
@@ -53,7 +56,7 @@ Art Style: Clean crisp editorial street photography. Use bright even professiona
         text_prompt: `Place the provided "Brand Logo" (asset2) onto the final image (asset1).
 1. If the final image already has a logo, replace it with the new one in the exact same position.
 2. If the template does not have a logo, place the new logo in a clean, professional corner (e.g., top-right).
-3.Ensure the logo is clearly visible, following contrast rules (recolor to monochrome if needed), and does not overlap the new product or any human faces. The logo's shape must be preserved.
+3. Ensure the logo is clearly visible with crisp contrast, preserving the logo's badge, emblem shape, and brand typography. It must not overlap the product or human faces.
 `,
         image_slots: [{asset_name: 'asset2', is_static: false}],
         text_variables: [],

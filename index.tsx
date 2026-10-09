@@ -27,6 +27,7 @@ import {DEFAULT_IMAGE_MODEL} from './src/constants';
 import {Template} from './src/types';
 import {TEMPLATES} from './src/data/templates';
 import {t, currentLanguage, toggleLanguage} from './src/i18n';
+import {DiagnosticsModalComponent} from './src/components/DiagnosticsModalComponent';
 
 declare const process: {env: {[key: string]: string | undefined}};
 // --- HELPERS ---
@@ -48,6 +49,7 @@ const App = {
     const currentTemplateForBulk = ref<Template | null>(null);
     const isSaving = ref(false);
     const previewImageUrl = ref<string | null>(null);
+    const isDiagnosticsOpen = ref(false);
 
     const openPreview = (url: string) => {
       previewImageUrl.value = url;
@@ -373,6 +375,7 @@ const App = {
       t,
       currentLanguage,
       toggleLanguage,
+      isDiagnosticsOpen,
     };
   },
   template: `
@@ -396,8 +399,12 @@ const App = {
                     <div @click="switchPage('experiment')" class="nav-item whitespace-nowrap" :class="{active: currentPage === 'experiment'}">{{ t('bulkCreation') }}</div>
                 </nav>
 
-                <!-- Status & Language Toggle (Desktop) -->
+                <!-- Status, Diagnostics & Language Toggle (Desktop) -->
                 <div class="hidden md:flex items-center space-x-2 shrink-0 whitespace-nowrap" id="auth-container">
+                    <button @click="isDiagnosticsOpen = true" class="material-button material-button-secondary text-xs px-2.5 py-1.5 flex items-center gap-1 font-medium bg-gray-50 border border-gray-300 hover:bg-gray-100 transition-colors whitespace-nowrap shrink-0 cursor-pointer" title="查看 Vertex AI 实时请求流水与系统诊断">
+                        <span>📋</span>
+                        <span class="whitespace-nowrap">{{ currentLanguage === 'zh' ? '运行日志' : 'Logs' }}</span>
+                    </button>
                     <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold shadow-xs whitespace-nowrap shrink-0">
                         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
                         <span class="whitespace-nowrap hidden xl:inline">Vertex AI Global · Nano Banana 2.1 & 3.8</span>
@@ -503,8 +510,12 @@ const App = {
             </button>
         </div>
     </div>
+
+    <!-- Diagnostics & Logs Modal -->
+    <diagnostics-modal :is-open="isDiagnosticsOpen" @close="isDiagnosticsOpen = false" />
   `,
 };
 
 const app = createApp(App);
+app.component('diagnostics-modal', DiagnosticsModalComponent);
 app.mount('#app');

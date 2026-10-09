@@ -184,24 +184,36 @@ const coffeeSvg = `
 </svg>
 `;
 
-// 5. Sample Transparent Brand Logos
+// 5. Sample Transparent Brand Logos (High-Contrast Luxury Brand Emblems)
 const logoLuminaSvg = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" width="100%" height="100%">
   <rect width="400" height="120" fill="transparent"/>
-  <circle cx="60" cy="60" r="28" fill="none" stroke="#ffffff" stroke-width="4"/>
-  <path d="M 60 40 L 60 80 M 40 60 L 80 60" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
-  <text x="110" y="68" font-family="'Cinzel', serif" font-size="28" font-weight="bold" fill="#ffffff" letter-spacing="6">LUMINA</text>
-  <text x="112" y="85" font-family="sans-serif" font-size="10" fill="#9ca3af" letter-spacing="4">PARIS · STUDIO</text>
+  <!-- Luxury Crest Badge with High Contrast -->
+  <circle cx="60" cy="60" r="32" fill="#0f172a" stroke="#d97706" stroke-width="2.5"/>
+  <!-- Faceted Luxury Diamond Icon -->
+  <polygon points="46,54 74,54 80,62 60,78 40,62" fill="#f59e0b" stroke="#fef08a" stroke-width="1.5"/>
+  <line x1="53" y1="54" x2="48" y2="62" stroke="#fef08a" stroke-width="1"/>
+  <line x1="67" y1="54" x2="72" y2="62" stroke="#fef08a" stroke-width="1"/>
+  <line x1="48" y1="62" x2="72" y2="62" stroke="#fef08a" stroke-width="1"/>
+  <line x1="53" y1="54" x2="60" y2="78" stroke="#fef08a" stroke-width="1"/>
+  <line x1="67" y1="54" x2="60" y2="78" stroke="#fef08a" stroke-width="1"/>
+  <polygon points="60,40 62,45 67,45 63,48 64,53 60,50 56,53 57,48 53,45 58,45" fill="#fde047"/>
+  <!-- Dark Contrast Backdrop for Typography -->
+  <rect x="105" y="32" width="280" height="56" rx="8" fill="#0f172a" opacity="0.9" stroke="#d97706" stroke-width="1"/>
+  <text x="120" y="58" font-family="'Cinzel', 'Playfair Display', serif" font-size="22" font-weight="bold" fill="#fbbf24" letter-spacing="4">L U M I N A</text>
+  <text x="122" y="76" font-family="sans-serif" font-size="9" font-weight="600" fill="#e2e8f0" letter-spacing="3">PARIS · HAUTE PARFUMERIE</text>
 </svg>
 `;
 
 const logoAeroSvg = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" width="100%" height="100%">
   <rect width="400" height="120" fill="transparent"/>
-  <path d="M 40 75 L 75 35 L 90 75 Z" fill="#38bdf8"/>
+  <rect x="25" y="28" width="70" height="64" rx="12" fill="#111827" stroke="#38bdf8" stroke-width="2"/>
+  <path d="M 40 75 L 75 35 L 90 75 Z" fill="#0ea5e9"/>
   <path d="M 65 75 L 95 35 L 110 75 Z" fill="#ec4899"/>
-  <text x="135" y="70" font-family="'Montserrat', sans-serif" font-size="32" font-weight="900" font-style="italic" fill="#ffffff" letter-spacing="2">AERO</text>
-  <text x="250" y="70" font-family="'Montserrat', sans-serif" font-size="32" font-weight="300" fill="#38bdf8" letter-spacing="1">MAX</text>
+  <rect x="105" y="32" width="280" height="56" rx="8" fill="#111827" opacity="0.9" stroke="#38bdf8" stroke-width="1"/>
+  <text x="120" y="60" font-family="'Montserrat', sans-serif" font-size="24" font-weight="900" font-style="italic" fill="#ffffff" letter-spacing="2">A E R O  M A X</text>
+  <text x="122" y="76" font-family="sans-serif" font-size="9" font-weight="700" fill="#38bdf8" letter-spacing="2">ATHLETIC PERFORMANCE · 2026</text>
 </svg>
 `;
 
@@ -251,15 +263,21 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
 export const DEMO_LOGOS: DemoLogo[] = [
   {
     id: 'logo-lumina',
-    name: '✨ LUMINA PARIS (奢华白金标)',
-    icon: '✨',
-    dataUrl: svgToDataUrl(logoLuminaSvg),
+    name: '👑 LUMINA PARIS (高奢珠宝金标)',
+    icon: '👑',
+    dataUrl: '/logos/logo_lumina_luxury.png',
   },
   {
     id: 'logo-aero',
-    name: '⚡ AERO MAX (潮酷渐变标)',
+    name: '⚡ AERO MAX (运动潮牌标)',
     icon: '⚡',
-    dataUrl: svgToDataUrl(logoAeroSvg),
+    dataUrl: '/logos/logo_aero_sports.png',
+  },
+  {
+    id: 'logo-verdant',
+    name: '🌿 VERDANT (极简植物标)',
+    icon: '🌿',
+    dataUrl: '/logos/logo_verdant_organic.png',
   },
 ];
 

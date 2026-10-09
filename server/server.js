@@ -232,14 +232,85 @@ app.use('/api-proxy', async (req, res, next) => {
   }
 });
 
+// --- IN-MEMORY REQUEST LOG BUFFER (FOR DIAGNOSTICS & TROUBLESHOOTING) ---
+const MAX_LOGS = 100;
+const serverLogs = [];
+
+function recordLog(entry) {
+  serverLogs.push(entry);
+  if (serverLogs.length > MAX_LOGS) {
+    serverLogs.shift();
+  }
+}
+
 app.post('/generate-content', async (req, res) => {
+  const reqId = 'req_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+  const startTime = Date.now();
+  const model = req.body?.model || process.env.DEFAULT_IMAGE_MODEL || 'gemini-nano-banana-2.1';
+  
+  // Extract text prompt snippet for diagnostics
+  let promptSnippet = '';
+  let imagesCount = 0;
+  if (Array.isArray(req.body?.contents)) {
+    for (const c of req.body.contents) {
+      if (Array.isArray(c?.parts)) {
+        for (const p of c.parts) {
+          if (p.text) promptSnippet += p.text + ' ';
+          if (p.inlineData) imagesCount++;
+        }
+      }
+    }
+  }
+  promptSnippet = promptSnippet.trim();
+
   try {
     const response = await ai.models.generateContent(req.body);
+    const durationMs = Date.now() - startTime;
+    
+    // Check generated image size
+    let outputSizeBytes = 0;
+    try {
+      const candidate = response?.candidates?.[0];
+      const part = candidate?.content?.parts?.[0];
+      if (part?.inlineData?.data) {
+        outputSizeBytes = Math.round((part.inlineData.data.length * 3) / 4);
+      }
+    } catch (_) {}
+
+    recordLog({
+      id: reqId,
+      timestamp: new Date().toISOString(),
+      status: 200,
+      model,
+      durationMs,
+      imagesCount,
+      outputSizeBytes,
+      prompt: promptSnippet,
+      error: null
+    });
+
+    console.log(`[Banana-Log] ${new Date().toISOString()} | 200 OK | ${durationMs}ms | model=${model} | prompt="${promptSnippet.substring(0, 60)}..."`);
     res.json(response);
 
   } catch (error) {
-    console.error('API call error:', error);
-    console.error('Error Req body:', req.body);
+    const durationMs = Date.now() - startTime;
+    const errorStatus = error.status || error.response?.status || 500;
+    const errorMsg = error.message || error.response?.data?.error?.message || 'Unknown error';
+
+    recordLog({
+      id: reqId,
+      timestamp: new Date().toISOString(),
+      status: errorStatus,
+      model,
+      durationMs,
+      imagesCount,
+      outputSizeBytes: 0,
+      prompt: promptSnippet,
+      error: errorMsg
+    });
+
+    console.error(`[Banana-Log ERROR] ${new Date().toISOString()} | ${errorStatus} | ${durationMs}ms | model=${model} | err=${errorMsg}`);
+
     if (error.status) {
       res.status(error.status).json({
         status: error.status,
@@ -256,6 +327,29 @@ app.post('/generate-content', async (req, res) => {
       res.status(500).json({ error: 'Internal error', message: error.message });
     }
   }
+});
+
+// Logs & Diagnostics API
+app.get('/api/logs', (req, res) => {
+  res.json({
+    service: 'banana-milkshake',
+    version: 'v2026.10.9',
+    environment: {
+      gcpProject: process.env.GOOGLE_CLOUD_PROJECT || 'panliuyang-ramp-up-project-01',
+      gcpLocation: process.env.GOOGLE_CLOUD_LOCATION || 'global',
+      activeImageModel: process.env.DEFAULT_IMAGE_MODEL || 'gemini-nano-banana-2.1',
+      activeTextModel: process.env.DEFAULT_TEXT_MODEL || 'gemini-3.8-flash',
+      cloudRunRevision: process.env.K_REVISION || 'local-dev',
+      uptimeSeconds: Math.floor(process.uptime()),
+    },
+    total: serverLogs.length,
+    logs: serverLogs.slice().reverse()
+  });
+});
+
+app.delete('/api/logs', (req, res) => {
+  serverLogs.length = 0;
+  res.json({ ok: true, message: 'Logs cleared.' });
 });
 
 const webSocketInterceptorScriptTag = `<script src="/public/websocket-interceptor.js" defer></script>`;
