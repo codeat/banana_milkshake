@@ -146,9 +146,27 @@ export const ResizingPageComponent = defineComponent({
       }
     };
 
-    const dataUrlToBase64 = (dataUrl: string) => dataUrl.split(',')[1];
-
-
+    const resolveImageBase64 = async (
+      urlOrDataUrl: string,
+    ): Promise<{base64: string; mimeType: string}> => {
+      if (urlOrDataUrl.startsWith('data:')) {
+        const mimeType =
+          urlOrDataUrl.match(/data:(.*?);base64/)?.[1] || 'image/png';
+        const base64 = urlOrDataUrl.split(',')[1];
+        return {base64, mimeType};
+      }
+      const res = await fetch(urlOrDataUrl);
+      const blob = await res.blob();
+      const mimeType = blob.type || 'image/png';
+      const buffer = await blob.arrayBuffer();
+      let binary = '';
+      const bytes = new Uint8Array(buffer);
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64 = btoa(binary);
+      return {base64, mimeType};
+    };
 
     const runForSize = async (size: string) => {
       const result = results[size];
@@ -165,9 +183,8 @@ export const ResizingPageComponent = defineComponent({
         const parts: Part[] = [];
 
         // Asset 1: Product Image
-        const productBase64 = dataUrlToBase64(productImagePreview.value);
-        const productMimeType =
-          productImagePreview.value.match(/data:(.*);base64/)?.[1] || 'image/png';
+        const {base64: productBase64, mimeType: productMimeType} =
+          await resolveImageBase64(productImagePreview.value);
         parts.push({
           inlineData: {data: productBase64, mimeType: productMimeType},
         });

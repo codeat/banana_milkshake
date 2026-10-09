@@ -276,7 +276,27 @@ export const CreationPageComponent = defineComponent({
       }
     };
 
-    const dataUrlToBase64 = (dataUrl: string) => dataUrl.split(',')[1];
+    const resolveImageBase64 = async (
+      urlOrDataUrl: string,
+    ): Promise<{base64: string; mimeType: string}> => {
+      if (urlOrDataUrl.startsWith('data:')) {
+        const mimeType =
+          urlOrDataUrl.match(/data:(.*?);base64/)?.[1] || 'image/png';
+        const base64 = urlOrDataUrl.split(',')[1];
+        return {base64, mimeType};
+      }
+      const res = await fetch(urlOrDataUrl);
+      const blob = await res.blob();
+      const mimeType = blob.type || 'image/png';
+      const buffer = await blob.arrayBuffer();
+      let binary = '';
+      const bytes = new Uint8Array(buffer);
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const base64 = btoa(binary);
+      return {base64, mimeType};
+    };
 
     const runStep = async (step: StepState, index: number) => {
       const result = results[step.id];
@@ -297,10 +317,10 @@ export const CreationPageComponent = defineComponent({
           const prevStep = steps[index - 1];
           const prevResult = results[prevStep.id];
           if (prevResult.imageUrl) {
-            const base64Data = dataUrlToBase64(prevResult.imageUrl);
-            const mimeType =
-              prevResult.imageUrl.match(/data:(.*);base64/)?.[1] || 'image/png';
-            parts.push({inlineData: {data: base64Data, mimeType}});
+            const {base64, mimeType} = await resolveImageBase64(
+              prevResult.imageUrl,
+            );
+            parts.push({inlineData: {data: base64, mimeType}});
           } else {
             throw new Error(
               `Please run '${prevStep.title}' to generate an image for this step.`,
@@ -311,10 +331,9 @@ export const CreationPageComponent = defineComponent({
         // 2. Current step's uploaded/static images
         for (const imageInput of step.imageInputs) {
           if (imageInput.previewUrl) {
-            const base64 = dataUrlToBase64(imageInput.previewUrl);
-            const mimeType =
-              imageInput.previewUrl.match(/data:(.*);base64/)?.[1] ||
-              'image/png';
+            const {base64, mimeType} = await resolveImageBase64(
+              imageInput.previewUrl,
+            );
             parts.push({inlineData: {data: base64, mimeType}});
           }
         }

@@ -212,7 +212,7 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
     nameEn: 'Luxury French Perfume',
     category: 'beauty',
     icon: '🧴',
-    dataUrl: svgToDataUrl(perfumeSvg),
+    dataUrl: '/products/demo_perfume.png',
     recommendedPrompt:
       'Place this luxury perfume bottle in the center of an opulent Italian marble vanity table. Soft morning sunlight streaming through sheer linen curtains, casting warm golden caustics and subtle reflections. Minimalist organic floral vase in soft background blur. Editorial high-end beauty commercial advertisement photography, cinematic depth of field, 8k resolution.',
   },
@@ -222,7 +222,7 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
     nameEn: 'Air Modern Sneaker',
     category: 'fashion',
     icon: '👟',
-    dataUrl: svgToDataUrl(sneakerSvg),
+    dataUrl: '/products/demo_sneaker.png',
     recommendedPrompt:
       'Dynamic street fashion commercial for these running sneakers. Floating in mid-air above a wet asphalt street in a neon-lit cyberpunk metropolis at dusk. Neon pink and cyan reflections on the wet ground, dramatic rim lighting emphasizing the aerodynamic sole curves, cinematic motion blur, commercial advertising poster.',
   },
@@ -232,7 +232,7 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
     nameEn: 'Wireless ANC Headphones',
     category: 'tech',
     icon: '🎧',
-    dataUrl: svgToDataUrl(headphoneSvg),
+    dataUrl: '/products/demo_headphone.png',
     recommendedPrompt:
       'Professional industrial design showcase for premium over-ear headphones. Displayed resting on a sleek dark brushed titanium stand in a modern minimalist architect loft studio. Warm dramatic studio spot lighting highlighting the metallic chamfered edges, dark matte background, ultra-sharp texture detail.',
   },
@@ -242,7 +242,7 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
     nameEn: 'Artisan Craft Coffee',
     category: 'fnb',
     icon: '☕',
-    dataUrl: svgToDataUrl(coffeeSvg),
+    dataUrl: '/products/demo_coffee.png',
     recommendedPrompt:
       'Artisanal cafe atmosphere featuring this handcrafted ceramic latte cup on a rustic dark oak table. Roasted whole coffee beans scattered artfully around the saucer, steam rising gently in the warm golden afternoon lighting. Cozy Nordic bakery aesthetic, rich earthy tones, professional food & beverage catalog styling.',
   },

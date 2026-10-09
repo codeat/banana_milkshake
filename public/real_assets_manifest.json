@@ -1,0 +1,16 @@
+{
+  "products": {
+    "perfume": "/products/demo_perfume.png",
+    "sneaker": "/products/demo_sneaker.png",
+    "headphone": "/products/demo_headphone.png",
+    "coffee": "/products/demo_coffee.png"
+  },
+  "templates": {
+    "streetSnap": "/previews/cover_street_snap.png",
+    "virtualTryOn": "/previews/cover_virtual_try_on.png",
+    "brandGuideline": "/previews/cover_brand_guideline.png",
+    "bundle": "/previews/cover_bundle.png",
+    "holiday": "/previews/cover_holiday.png",
+    "resizer": "/previews/cover_resizer.png"
+  }
+}
