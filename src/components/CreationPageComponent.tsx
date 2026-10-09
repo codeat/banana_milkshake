@@ -1121,7 +1121,11 @@ export const CreationPageComponent = defineComponent({
                         <div class="p-3.5 bg-indigo-50/70 rounded-xl border border-indigo-100 shadow-2xs">
                           <div class="flex items-center justify-between gap-2 mb-2">
                             <span class="text-xs font-bold text-indigo-900 flex items-center gap-1 shrink-0 whitespace-nowrap">
-                              <span>{t('demoAssetsTitle')}</span>
+                              <span>
+                                {currentLanguage.value === 'zh'
+                                  ? '💡 示例商品矩阵一键填入 (12款全品类棚拍主图 · 无需自己准备图片):'
+                                  : '💡 12-Product Studio Packshot Matrix (1-Click Fill):'}
+                              </span>
                             </span>
                           </div>
                           <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -1133,23 +1137,26 @@ export const CreationPageComponent = defineComponent({
                                   type="button"
                                   key={prod.id}
                                   onClick={() => loadDemoProduct(step, prod)}
-                                  class={`p-2 text-left rounded-lg bg-white border transition-all flex items-center gap-2 group cursor-pointer ${
+                                  class={`p-2 text-left rounded-lg bg-white border transition-all flex items-center gap-2.5 group cursor-pointer ${
                                     isSelected
-                                      ? 'border-indigo-600 ring-2 ring-indigo-500/20 shadow-xs'
+                                      ? 'border-indigo-600 ring-2 ring-indigo-500/20 shadow-xs bg-indigo-50/30'
                                       : 'border-indigo-100 hover:border-indigo-500 hover:shadow-sm'
                                   }`}>
                                   <img
                                     src={prod.dataUrl}
                                     alt={prod.name}
-                                    class="w-9 h-9 rounded-md object-cover border border-indigo-100 shrink-0"
+                                    class="w-11 h-11 rounded-md object-cover border border-indigo-100 shrink-0 bg-gray-50"
                                   />
-                                  <div class="overflow-hidden">
+                                  <div class="overflow-hidden min-w-0">
                                     <div class="text-xs font-bold text-gray-800 group-hover:text-indigo-600 truncate">
                                       {currentLanguage.value === 'zh'
                                         ? prod.name
                                         : prod.nameEn}
                                     </div>
-                                    <div class="text-[10px] text-indigo-600/80 font-medium truncate">
+                                    <div class="text-[10px] text-gray-500 truncate">
+                                      {prod.category}
+                                    </div>
+                                    <div class="text-[10px] text-indigo-600 font-semibold truncate">
                                       {isSelected ? '✓ 当前已选商品' : '点击一键填入'}
                                     </div>
                                   </div>

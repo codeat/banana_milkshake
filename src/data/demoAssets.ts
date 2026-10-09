@@ -267,7 +267,7 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
     id: 'demo-perfume',
     name: '🧴 奢华法式香水',
     nameEn: 'Luxury French Perfume',
-    category: 'beauty',
+    category: '高奢香氛 · 玻璃瓶身',
     icon: '🧴',
     dataUrl: '/products/demo_perfume.png',
     recommendedPrompt:
@@ -277,7 +277,7 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
     id: 'demo-sneaker',
     name: '👟 极简潮酷跑鞋',
     nameEn: 'Air Modern Sneaker',
-    category: 'fashion',
+    category: '运动鞋履 · 动感街拍',
     icon: '👟',
     dataUrl: '/products/demo_sneaker.png',
     recommendedPrompt:
@@ -287,7 +287,7 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
     id: 'demo-headphone',
     name: '🎧 降噪头戴耳机',
     nameEn: 'Wireless ANC Headphones',
-    category: 'tech',
+    category: '声学数码 · 钛金质感',
     icon: '🎧',
     dataUrl: '/products/demo_headphone.png',
     recommendedPrompt:
@@ -297,11 +297,91 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
     id: 'demo-coffee',
     name: '☕ 精品手冲咖啡',
     nameEn: 'Artisan Craft Coffee',
-    category: 'fnb',
+    category: '餐饮烘焙 · 拿铁拉花',
     icon: '☕',
     dataUrl: '/products/demo_coffee.png',
     recommendedPrompt:
       'Artisanal cafe atmosphere featuring this handcrafted ceramic latte cup on a rustic dark oak table. Roasted whole coffee beans scattered artfully around the saucer, steam rising gently in the warm golden afternoon lighting. Cozy Nordic bakery aesthetic, rich earthy tones, professional food & beverage catalog styling.',
+  },
+  {
+    id: 'demo-cashmere-coat',
+    name: '🧥 高定驼色羊绒大衣',
+    nameEn: 'Camel Cashmere Trench Coat',
+    category: '高定女装 · 模特试穿',
+    icon: '🧥',
+    dataUrl: '/products/prod_05_cashmere_coat.png',
+    recommendedPrompt:
+      'High-fashion Parisian autumn editorial street photography featuring a model wearing this tailored camel cashmere trench coat while walking past Haussmann limestone architecture in warm golden hour sunlight.',
+  },
+  {
+    id: 'demo-leather-handbag',
+    name: '👜 巴黎黑金真皮手提包',
+    nameEn: 'Parisian Black & Gold Handbag',
+    category: '高奢皮具 · 金扣小牛皮',
+    icon: '👜',
+    dataUrl: '/products/prod_06_leather_handbag.png',
+    recommendedPrompt:
+      'Luxury fashion campaign featuring this structured black calfskin handbag with champagne-gold hardware resting on a travertine stone plinth with warm architectural shadow play.',
+  },
+  {
+    id: 'demo-swiss-watch',
+    name: '⌚ 瑞士皇家蓝机械腕表',
+    nameEn: 'Swiss Rose-Gold Chronograph',
+    category: '高级制表 · 玫瑰金蓝盘',
+    icon: '⌚',
+    dataUrl: '/products/prod_07_swiss_watch.png',
+    recommendedPrompt:
+      'Haute horlogerie macro commercial advertisement of this rose-gold and royal blue chronograph watch resting on dark brushed slate with dramatic golden rim lighting.',
+  },
+  {
+    id: 'demo-emerald-serum',
+    name: '🌿 翡翠植萃修护精华',
+    nameEn: 'Botanical Emerald Elixir Serum',
+    category: '植萃护肤 · 滴管精华瓶',
+    icon: '🌿',
+    dataUrl: '/products/prod_08_emerald_serum.png',
+    recommendedPrompt:
+      'Clean botanical skincare campaign showing this emerald glass dropper serum bottle on rippled water and white stone, surrounded by fresh dewy green leaves in bright morning sunlight.',
+  },
+  {
+    id: 'demo-silk-dress',
+    name: '👗 香槟金真丝晚礼服',
+    nameEn: 'Champagne Silk Evening Dress',
+    category: '高定礼服 · 垂坠真丝',
+    icon: '👗',
+    dataUrl: '/products/prod_09_silk_dress.png',
+    recommendedPrompt:
+      'Editorial luxury eveningwear campaign featuring a model wearing this draped champagne-gold silk midi dress in a grand candlelit neoclassical gallery.',
+  },
+  {
+    id: 'demo-velvet-lipstick',
+    name: '💄 玫瑰金丝绒哑光口红',
+    nameEn: 'Rose-Gold Velvet Matte Lipstick',
+    category: '高奢彩妆 · 正红丝绒膏体',
+    icon: '💄',
+    dataUrl: '/products/prod_10_velvet_lipstick.png',
+    recommendedPrompt:
+      'High-impact luxury beauty campaign featuring this rose-gold couture ruby lipstick on a glossy champagne mirror surface with soft studio rim light.',
+  },
+  {
+    id: 'demo-aviator-sunglasses',
+    name: '🕶️ 钛金属流线太阳镜',
+    nameEn: 'Titanium Aviator Sunglasses',
+    category: '潮流配饰 · 度假街拍',
+    icon: '🕶️',
+    dataUrl: '/products/prod_11_aviator_sunglasses.png',
+    recommendedPrompt:
+      'Mediterranean resort eyewear campaign featuring these brushed-titanium aviator sunglasses on sun-warmed white marble overlooking the Amalfi coast.',
+  },
+  {
+    id: 'demo-scented-candle',
+    name: '🕯️ 琥珀乌木香氛蜡烛',
+    nameEn: 'Artisanal Amber & Oud Candle',
+    category: '家居香氛 · 棱纹琥珀杯',
+    icon: '🕯️',
+    dataUrl: '/products/prod_12_scented_candle.png',
+    recommendedPrompt:
+      'Warm minimalist interior lifestyle photograph featuring this ribbed smoked-amber glass candle on a travertine coffee table with soft evening shadows.',
   },
 ];
 
