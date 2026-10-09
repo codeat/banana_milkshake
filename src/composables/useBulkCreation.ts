@@ -278,21 +278,25 @@ export function useBulkCreation(
   };
 
   const urlToGeminiPart = async (url: string) => {
-    const CORS_PROXY_URL = '/image-proxy?url=';
-
     try {
-      const response = await fetch(CORS_PROXY_URL + encodeURIComponent(url));
+      const fetchTarget =
+        url.startsWith('/') || url.startsWith('data:')
+          ? url
+          : '/image-proxy?url=' + encodeURIComponent(url);
+      const response = await fetch(fetchTarget);
       if (!response.ok) {
         throw new Error(
-          `Image proxy fetch failed with status: ${response.statusText} (${response.status})`,
+          `Image fetch failed with status: ${response.statusText} (${response.status})`,
         );
       }
       const blob = await response.blob();
       return await blobToGeminiPart(blob);
     } catch (error: unknown) {
-      console.error(`Failed to fetch image via proxy for ${url}:`, error);
+      console.error(`Failed to fetch image for ${url}:`, error);
       const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`Could not load image from URL via internal proxy: ${message}. Please ensure the URL is correct and publicly accessible.`);
+      throw new Error(
+        `Could not load image from URL: ${message}. Please ensure the URL is accessible.`,
+      );
     }
   };
 
@@ -325,7 +329,9 @@ export function useBulkCreation(
           for (const slot of step.image_slots) {
             if (!slot.is_static) {
               if (job.rowData[slot.asset_name]) {
-                parts.push(await urlToGeminiPart(job.rowData[slot.asset_name]));
+                parts.push(
+                  (await urlToGeminiPart(job.rowData[slot.asset_name])) as Part,
+                );
               } else {
                 throw new Error(
                   `Missing URL for required asset: ${slot.asset_name}`,
@@ -334,9 +340,10 @@ export function useBulkCreation(
             } else {
               if (bulkStaticAssets[slot.asset_name]) {
                 parts.push(bulkStaticAssets[slot.asset_name]);
-              } else if (currentTemplateForBulk.value.driveFolderId) {
-                throw new Error(
-                  `Static asset '${slot.asset_name}' was not loaded from Google Drive.`,
+              } else {
+                // Default fallback to 100% transparent Lumina luxury logo for static step-2 slot
+                parts.push(
+                  (await urlToGeminiPart('/logos/logo_lumina_luxury.png')) as Part,
                 );
               }
             }
@@ -366,7 +373,6 @@ export function useBulkCreation(
             responseModalities: [Modality.IMAGE],
             imageConfig: {
               aspectRatio: bulkAspectRatio.value,
-              imageSize: bulkResolution.value,
             },
             temperature: bulkTemperature.value,
           };
@@ -374,6 +380,7 @@ export function useBulkCreation(
           if (useVertexAi) {
             response = await callGenAIApi({
               model: modelToUse,
+              stepTag: `Bulk ${job.rowData.id} · Step ${index + 1}`,
               contents: {
                 role: 'user',
                 parts,

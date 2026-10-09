@@ -5,6 +5,7 @@
 import {PropType, computed, defineComponent, ref, watch, reactive} from 'vue';
 import {SUPPORTED_IMAGE_MODELS} from '../constants';
 import {BulkJob, Template} from '../types';
+import {currentLanguage, getModelDisplayName} from '../i18n';
 
 /**
  * A Vue component for the bulk image resizing page.
@@ -85,6 +86,18 @@ export const BulkResizingPageComponent = defineComponent({
       emit('file-upload', file, selectedSizes);
     };
 
+    const loadDemoResizerCsv = () => {
+      const csvContent = [
+        'id,image_url',
+        'perfume_banner,/products/demo_perfume.png',
+        'sneaker_banner,/products/demo_sneaker.png',
+      ].join('\n');
+      const demoFile = new File([csvContent], 'demo_bulk_resizer.csv', {
+        type: 'text/csv',
+      });
+      emit('file-upload', demoFile, selectedSizes);
+    };
+
     const startBulkGeneration = () => {
       emit('start-generation', selectedSizes);
     };
@@ -102,7 +115,7 @@ export const BulkResizingPageComponent = defineComponent({
           {/* Left Column: Setup */}
           <div class="lg:col-span-1 space-y-6 sticky top-[80px]">
             <div class="material-card">
-              <h2 class="text-lg font-bold mb-4">1. Selected Template</h2>
+              <h2 class="text-lg font-bold mb-4">{currentLanguage.value === 'zh' ? '1. 当前选用模板' : '1. Selected Template'}</h2>
               <div class="p-4 border border-outline rounded-lg flex items-center">
                 {props.selectedTemplate?.previewImage ? (
                   <img
@@ -124,13 +137,22 @@ export const BulkResizingPageComponent = defineComponent({
                       emit('change-template');
                     }}
                     class="text-sm text-primary font-medium">
-                    Change template
+                    {currentLanguage.value === 'zh' ? '更换模板' : 'Change template'}
                   </a>
                 </div>
               </div>
             </div>
             <div class="material-card">
-              <h2 class="text-lg font-bold mb-4">2. Upload Data</h2>
+              <div class="flex items-center justify-between mb-3">
+                <h2 class="text-lg font-bold">{currentLanguage.value === 'zh' ? '2. 上传数据集 (CSV)' : '2. Upload Data'}</h2>
+                <button
+                  type="button"
+                  onClick={loadDemoResizerCsv}
+                  disabled={props.isProcessing}
+                  class="px-2.5 py-1 text-xs font-bold rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition-colors cursor-pointer">
+                  ⚡ {currentLanguage.value === 'zh' ? '一键载入演示批次' : 'Load Demo Batch'}
+                </button>
+              </div>
               <input
                 type="file"
                 onChange={handleFileUpload}
@@ -141,12 +163,12 @@ export const BulkResizingPageComponent = defineComponent({
               />
               <div class="mt-3 text-xs text-on-surface-variant bg-gray-50 p-3 rounded-lg">
                 <p>
-                  Upload a CSV (max 100 rows) containing a unique <code class="text-primary">id</code> column for naming and an <code class="text-primary">image_url</code> column with public image URLs.
+                  Upload a CSV (max 100 rows) containing a unique <code class="text-primary">id</code> column for naming and an <code class="text-primary">image_url</code> column with image URLs.
                 </p>
               </div>
             </div>
             <div class="material-card">
-              <h2 class="text-lg font-bold mb-4">3. Generation Settings</h2>
+              <h2 class="text-lg font-bold mb-4">{currentLanguage.value === 'zh' ? '3. 生成参数设置' : '3. Generation Settings'}</h2>
 
               <div class="mb-4">
                 <label class="block text-sm font-medium text-on-surface-variant mb-1">
@@ -161,16 +183,11 @@ export const BulkResizingPageComponent = defineComponent({
                     )
                   }
                   class="material-input bg-white">
-                  {supportedModels.map((m) => {
-                    const isSupported =
-                      m === 'gemini-3.1-flash-image' ||
-                      m === 'gemini-3.1-flash-lite-image';
-                    return (
-                      <option key={m} value={m} disabled={!isSupported}>
-                        {m}
-                      </option>
-                    );
-                  })}
+                  {supportedModels.map((m) => (
+                    <option key={m} value={m}>
+                      {getModelDisplayName(m)}
+                    </option>
+                  ))}
                 </select>
               </div>
 

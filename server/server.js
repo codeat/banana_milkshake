@@ -71,7 +71,7 @@ const proxyLimiter = rateLimit({
 // Apply the rate limiter to the /api-proxy route before the main proxy logic
 app.use('/api-proxy', proxyLimiter);
 
-// New general-purpose image proxy
+// New general-purpose image proxy (supports both remote http/https URLs and local relative asset paths)
 app.get('/image-proxy', async (req, res) => {
   const imageUrl = req.query.url;
   if (!imageUrl) {
@@ -79,6 +79,17 @@ app.get('/image-proxy', async (req, res) => {
   }
 
   try {
+    if (typeof imageUrl === 'string' && imageUrl.startsWith('/')) {
+      const cleanRel = imageUrl.split('?')[0].replace(/^\/+/, '');
+      const candidateDist = path.join(staticPath, cleanRel);
+      const candidatePublic = path.join(__dirname, '..', 'public', cleanRel);
+      if (fs.existsSync(candidateDist)) {
+        return res.sendFile(candidateDist);
+      }
+      if (fs.existsSync(candidatePublic)) {
+        return res.sendFile(candidatePublic);
+      }
+    }
     console.log(`Image Proxy: Fetching ${imageUrl}`);
     const response = await axios({
       method: 'get',
@@ -247,31 +258,71 @@ app.post('/generate-content', async (req, res) => {
   const reqId = 'req_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
   const startTime = Date.now();
   const model = req.body?.model || process.env.DEFAULT_IMAGE_MODEL || 'gemini-nano-banana-2.1';
-  
+  const stepTag = req.body?.stepTag || '';
+
+  // Remove custom metadata field before passing to GoogleGenAI SDK
+  const sdkPayload = { ...req.body };
+  delete sdkPayload.stepTag;
+
   // Extract text prompt snippet for diagnostics
   let promptSnippet = '';
   let imagesCount = 0;
-  if (Array.isArray(req.body?.contents)) {
-    for (const c of req.body.contents) {
-      if (Array.isArray(c?.parts)) {
-        for (const p of c.parts) {
-          if (p.text) promptSnippet += p.text + ' ';
-          if (p.inlineData) imagesCount++;
-        }
+  const contentsList = Array.isArray(sdkPayload?.contents)
+    ? sdkPayload.contents
+    : sdkPayload?.contents
+      ? [sdkPayload.contents]
+      : [];
+  for (const c of contentsList) {
+    if (Array.isArray(c?.parts)) {
+      for (const p of c.parts) {
+        if (p.text) promptSnippet += p.text + ' ';
+        if (p.inlineData) imagesCount++;
       }
     }
   }
   promptSnippet = promptSnippet.trim();
 
+  const callVertexWithFallback = async () => {
+    const normalizedModel = model.replace(/^models\//, '');
+    try {
+      return await ai.models.generateContent({
+        ...sdkPayload,
+        model: normalizedModel,
+      });
+    } catch (innerErr) {
+      if (
+        (model === 'models/gempix-3' || model === 'gempix-3') &&
+        (innerErr.status === 404 || innerErr.response?.status === 404 || String(innerErr.message).includes('404'))
+      ) {
+        return await ai.models.generateContent({
+          ...sdkPayload,
+          model: 'gemini-nano-banana-2.1',
+        });
+      }
+      throw innerErr;
+    }
+  };
+
   try {
-    const response = await ai.models.generateContent(req.body);
+    let response;
+    try {
+      response = await callVertexWithFallback();
+    } catch (firstErr) {
+      const code = firstErr.status || firstErr.response?.status || 0;
+      if (code === 429 || code === 503 || code === 500) {
+        await new Promise((r) => setTimeout(r, 900));
+        response = await callVertexWithFallback();
+      } else {
+        throw firstErr;
+      }
+    }
     const durationMs = Date.now() - startTime;
     
     // Check generated image size
     let outputSizeBytes = 0;
     try {
       const candidate = response?.candidates?.[0];
-      const part = candidate?.content?.parts?.[0];
+      const part = candidate?.content?.parts?.find((p) => p.inlineData) || candidate?.content?.parts?.[0];
       if (part?.inlineData?.data) {
         outputSizeBytes = Math.round((part.inlineData.data.length * 3) / 4);
       }
@@ -281,7 +332,7 @@ app.post('/generate-content', async (req, res) => {
       id: reqId,
       timestamp: new Date().toISOString(),
       status: 200,
-      model,
+      model: stepTag ? `${model} [${stepTag}]` : model,
       durationMs,
       imagesCount,
       outputSizeBytes,
@@ -289,7 +340,7 @@ app.post('/generate-content', async (req, res) => {
       error: null
     });
 
-    console.log(`[Banana-Log] ${new Date().toISOString()} | 200 OK | ${durationMs}ms | model=${model} | prompt="${promptSnippet.substring(0, 60)}..."`);
+    console.log(`[Banana-Log] ${new Date().toISOString()} | 200 OK | ${durationMs}ms | model=${model} | step=${stepTag} | prompt="${promptSnippet.substring(0, 60)}..."`);
     res.json(response);
 
   } catch (error) {
@@ -301,7 +352,7 @@ app.post('/generate-content', async (req, res) => {
       id: reqId,
       timestamp: new Date().toISOString(),
       status: errorStatus,
-      model,
+      model: stepTag ? `${model} [${stepTag}]` : model,
       durationMs,
       imagesCount,
       outputSizeBytes: 0,
@@ -327,6 +378,25 @@ app.post('/generate-content', async (req, res) => {
       res.status(500).json({ error: 'Internal error', message: error.message });
     }
   }
+});
+
+// Client-side error & event telemetry endpoint
+app.post('/api/client-log', (req, res) => {
+  const { status = 499, model = 'frontend-ui', stepTag = '', durationMs = 0, imagesCount = 0, prompt = '', error = null } = req.body || {};
+  const entry = {
+    id: 'ui_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+    timestamp: new Date().toISOString(),
+    status,
+    model: stepTag ? `${model} [${stepTag}]` : model,
+    durationMs,
+    imagesCount,
+    outputSizeBytes: 0,
+    prompt: prompt || '[Frontend Event / Error Telemetry]',
+    error,
+  };
+  recordLog(entry);
+  console.log(`[Banana-Client-Log] ${entry.timestamp} | status=${status} | model=${entry.model} | error=${error || 'none'}`);
+  res.json({ ok: true });
 });
 
 // Logs & Diagnostics API

@@ -60,7 +60,9 @@ export const messages = {
     aspectRatio: '画幅比例 (Aspect Ratio)',
     model: 'AI 生成模型',
     resolution: '画质分辨率 (Resolution)',
-    previewImage: '封面示意图',
+    previewImage: '封面示意图 / 模特参考',
+    previewImageHint: '默认模板封面 · 上传或勾选可作模特参考',
+    useAsModelRef: '👤 作为模特/穿搭参考注入',
     saveTemplate: '保存模板至 Drive',
     saving: '保存中...',
     stepsSection: '创意制作图层步骤',
@@ -163,7 +165,9 @@ export const messages = {
     aspectRatio: 'Aspect Ratio',
     model: 'AI Generative Model',
     resolution: 'Resolution',
-    previewImage: 'Cover Image',
+    previewImage: 'Cover / Model Reference',
+    previewImageHint: 'Template cover · Upload or toggle as model ref',
+    useAsModelRef: '👤 Inject as Model/Style Ref',
     saveTemplate: 'Save Template to Drive',
     saving: 'Saving...',
     stepsSection: 'Creative Generation Steps',
@@ -240,6 +244,7 @@ export function t(key: keyof typeof messages['zh']): string {
 export function getModelDisplayName(model: string): string {
   const lang = currentLanguage.value;
   const mapZh: Record<string, string> = {
+    'models/gempix-3': 'models/gempix-3 (Nano Banana 3 · 旗舰生图)',
     'gemini-nano-banana-2.1': 'gemini-nano-banana-2.1 (默认首选 · 新一代旗舰)',
     'gemini-3.1-flash-image': 'gemini-3.1-flash-image (极速高清生图)',
     'gemini-3-pro-image': 'gemini-3-pro-image (旗舰 · 影视级高精画质)',
@@ -247,6 +252,7 @@ export function getModelDisplayName(model: string): string {
     'gemini-2.5-flash-image': 'gemini-2.5-flash-image (兼容基准 · 经典模型)',
   };
   const mapEn: Record<string, string> = {
+    'models/gempix-3': 'models/gempix-3 (Nano Banana 3 · Flagship)',
     'gemini-nano-banana-2.1': 'gemini-nano-banana-2.1 (Default · Next-Gen Flagship)',
     'gemini-3.1-flash-image': 'gemini-3.1-flash-image (Ultra Fast & HD)',
     'gemini-3-pro-image': 'gemini-3-pro-image (Flagship · Studio Quality)',

@@ -23,7 +23,7 @@ import {
   SUPPORTED_IMAGE_MODELS,
   useVertexAi,
 } from '../constants';
-import {ai, callGenAIApi} from '../services/ai';
+import {ai, callGenAIApi, reportClientLog} from '../services/ai';
 import {
   ImageInput,
   StepResult,
@@ -33,8 +33,30 @@ import {
   TextVariable,
 } from '../types';
 import {t, currentLanguage, getModelDisplayName} from '../i18n';
-import {DEMO_PRODUCTS, DEMO_LOGOS, PROMPT_SCENE_CHIPS, DemoProduct} from '../data/demoAssets';
+import {
+  DEMO_PRODUCTS,
+  DEMO_LOGOS,
+  DEMO_MODELS,
+  PROMPT_SCENE_CHIPS,
+  DemoProduct,
+  DemoModel,
+} from '../data/demoAssets';
 import {TEMPLATES} from '../data/templates';
+
+const LOGO_POSITIONS = [
+  {id: 'top-left', labelZh: '↖ 左上角', labelEn: '↖ Top Left', promptDesc: 'top-left corner with clean margin'},
+  {id: 'top-center', labelZh: '↑ 顶部居中', labelEn: '↑ Top Center', promptDesc: 'top-center header area'},
+  {id: 'top-right', labelZh: '↗ 右上角', labelEn: '↗ Top Right', promptDesc: 'top-right corner with clean margin'},
+  {id: 'bottom-left', labelZh: '↙ 左下角', labelEn: '↙ Bottom Left', promptDesc: 'bottom-left corner with clean margin'},
+  {id: 'bottom-center', labelZh: '↓ 底部居中', labelEn: '↓ Bottom Center', promptDesc: 'bottom-center signature position'},
+  {id: 'bottom-right', labelZh: '↘ 右下角', labelEn: '↘ Bottom Right', promptDesc: 'bottom-right corner with clean margin'},
+];
+
+const LOGO_SCALES = [
+  {id: 'subtle', labelZh: '精致小标 (10%)', labelEn: 'Subtle (10%)', promptDesc: 'subtle, refined luxury scale (~10% of canvas width)'},
+  {id: 'balanced', labelZh: '标准商业标 (15%)', labelEn: 'Balanced (15%)', promptDesc: 'balanced commercial scale (~15% of canvas width)'},
+  {id: 'prominent', labelZh: '醒目主标 (22%)', labelEn: 'Prominent (22%)', promptDesc: 'prominent hero brand scale (~22% of canvas width)'},
+];
 
 /**
  * A Vue component for creating and editing templates.
@@ -74,8 +96,14 @@ export const CreationPageComponent = defineComponent({
     const genaiModel = ref(DEFAULT_IMAGE_MODEL);
     const steps = reactive<StepState[]>([]);
     const results = reactive<Record<string, StepResult>>({});
+    const stepMeta = reactive<
+      Record<string, {dimensions: string; durationSec: string; compareBase: boolean}>
+    >({});
+    const logoPosition = ref('bottom-center');
+    const logoScale = ref('balanced');
     const previewImageFile = ref<File | null>(null);
     const previewImagePreview = ref<string | null>(null);
+    const usePreviewAsModelRef = ref(false);
     const isLoadingTemplate = ref(false);
     const supportedModels = SUPPORTED_IMAGE_MODELS;
 
@@ -85,8 +113,10 @@ export const CreationPageComponent = defineComponent({
       genaiModel.value = template.genai_model || DEFAULT_IMAGE_MODEL;
       steps.splice(0, steps.length);
       Object.keys(results).forEach((key) => delete results[key]);
+      Object.keys(stepMeta).forEach((key) => delete stepMeta[key]);
       previewImageFile.value = null;
       previewImagePreview.value = template.previewImage || null;
+      usePreviewAsModelRef.value = false;
 
       let staticAssets: Record<string, string> = {};
       if (template.driveFolderId) {
@@ -268,6 +298,7 @@ export const CreationPageComponent = defineComponent({
       const file = (event.target as HTMLInputElement).files?.[0];
       if (file) {
         previewImageFile.value = file;
+        usePreviewAsModelRef.value = true;
         const reader = new FileReader();
         reader.onload = (e) => {
           previewImagePreview.value = e.target?.result as string;
@@ -305,9 +336,15 @@ export const CreationPageComponent = defineComponent({
         return;
       }
 
+      const startTime = Date.now();
       result.isLoading = true;
       result.error = null;
       result.imageUrl = null;
+      stepMeta[step.id] = {
+        dimensions: '',
+        durationSec: '',
+        compareBase: false,
+      };
 
       try {
         const parts: Part[] = [];
@@ -338,6 +375,20 @@ export const CreationPageComponent = defineComponent({
           }
         }
 
+        // 3. Optional Model / Style Reference Image from Cover/Model slot (Step 1)
+        let injectedModelRef = false;
+        if (
+          index === 0 &&
+          (usePreviewAsModelRef.value || previewImageFile.value) &&
+          previewImagePreview.value
+        ) {
+          const {base64, mimeType} = await resolveImageBase64(
+            previewImagePreview.value,
+          );
+          parts.push({inlineData: {data: base64, mimeType}});
+          injectedModelRef = true;
+        }
+
         if (parts.length === 0) {
           throw new Error('Please upload at least one image to run this step.');
         }
@@ -354,8 +405,21 @@ export const CreationPageComponent = defineComponent({
           }
         }
 
+        if (injectedModelRef) {
+          promptToSend +=
+            '\n\n[Model & Style Reference Instruction: An additional reference image has been provided as the last image input. Use the person/model appearance, pose, and outfit styling from that reference image as inspiration, while strictly featuring and preserving the primary product from the first image input (asset1).]';
+        }
+
+        if (index === 1) {
+          const posObj =
+            LOGO_POSITIONS.find((p) => p.id === logoPosition.value) ||
+            LOGO_POSITIONS[4];
+          const scaleObj =
+            LOGO_SCALES.find((s) => s.id === logoScale.value) || LOGO_SCALES[1];
+          promptToSend += `\n\n[Designer Layout Guidance: Place the transparent brand logo from asset2 cleanly in the ${posObj.promptDesc} at a ${scaleObj.promptDesc}, preserving 100% of the transparent background with no rectangular box around the logo.]`;
+        }
+
         parts.push({text: promptToSend});
-        console.log(parts);
 
         const modelToUse = genaiModel.value || DEFAULT_IMAGE_MODEL;
 
@@ -363,6 +427,7 @@ export const CreationPageComponent = defineComponent({
         if (useVertexAi) {
           response = await callGenAIApi({
             model: modelToUse,
+            stepTag: step.title,
             contents: {
               role: 'user',
               parts,
@@ -387,7 +452,17 @@ export const CreationPageComponent = defineComponent({
           (p: Part) => p.inlineData,
         );
         if (imagePart?.inlineData) {
-          result.imageUrl = `data:image/png;base64,${imagePart.inlineData.data}`;
+          const dataUrl = `data:image/png;base64,${imagePart.inlineData.data}`;
+          result.imageUrl = dataUrl;
+          const elapsed = ((Date.now() - startTime) / 1000).toFixed(1) + 's';
+          stepMeta[step.id].durationSec = elapsed;
+          const img = new Image();
+          img.onload = () => {
+            if (stepMeta[step.id]) {
+              stepMeta[step.id].dimensions = `${img.naturalWidth}×${img.naturalHeight} px`;
+            }
+          };
+          img.src = dataUrl;
         } else {
           throw new Error(
             'The model did not return an image. Try a different prompt.',
@@ -395,10 +470,19 @@ export const CreationPageComponent = defineComponent({
         }
       } catch (e: unknown) {
         console.error('Error running step:', e);
-        result.error =
+        const errMsg =
           e instanceof Error
             ? e.message
             : 'An error occurred while generating the image.';
+        result.error = errMsg;
+        reportClientLog({
+          status: 499,
+          model: genaiModel.value || DEFAULT_IMAGE_MODEL,
+          stepTag: step.title,
+          durationMs: Date.now() - startTime,
+          prompt: step.prompt,
+          error: errMsg,
+        });
       } finally {
         result.isLoading = false;
       }
@@ -723,19 +807,63 @@ export const CreationPageComponent = defineComponent({
                   </select>
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-on-surface-variant mb-1">
-                    {t('previewImage')}
-                  </label>
+                  <div class="flex items-center justify-between mb-1 gap-1">
+                    <label class="block text-sm font-medium text-on-surface-variant whitespace-nowrap">
+                      {t('previewImage')}
+                    </label>
+                    {previewImagePreview.value && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          usePreviewAsModelRef.value =
+                            !usePreviewAsModelRef.value;
+                        }}
+                        class={`text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all whitespace-nowrap cursor-pointer ${
+                          usePreviewAsModelRef.value
+                            ? 'bg-amber-100 text-amber-900 border-amber-400 shadow-xs'
+                            : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-amber-50 hover:text-amber-800'
+                        }`}
+                        title={
+                          currentLanguage.value === 'zh'
+                            ? '开启后将此图作为步骤 1 的人物模特/穿搭风格参考输入给大模型'
+                            : 'When enabled, feeds this image into Step 1 as model/outfit style reference'
+                        }>
+                        {usePreviewAsModelRef.value
+                          ? currentLanguage.value === 'zh'
+                            ? '✨ 已启用模特参考'
+                            : '✨ Model Ref ON'
+                          : currentLanguage.value === 'zh'
+                            ? '👤 作为模特参考'
+                            : '👤 Use as Model Ref'}
+                      </button>
+                    )}
+                  </div>
                   <label
                     for="preview-image-file"
                     class="mt-1 block cursor-pointer">
-                    <div class="p-2 border-2 border-dashed border-outline rounded-lg text-center hover:bg-gray-50 flex items-center justify-center min-h-[42px] bg-gray-50">
+                    <div
+                      class={`p-2 border-2 border-dashed rounded-lg text-center hover:bg-gray-50 flex items-center justify-center min-h-[42px] transition-colors ${
+                        usePreviewAsModelRef.value
+                          ? 'border-amber-500 bg-amber-50/40'
+                          : 'border-outline bg-gray-50'
+                      }`}>
                       {previewImagePreview.value ? (
-                        <img
-                          src={previewImagePreview.value}
-                          class="max-h-12 mx-auto rounded"
-                          alt="Preview image"
-                        />
+                        <div class="flex items-center gap-2">
+                          <img
+                            src={previewImagePreview.value}
+                            class="max-h-12 mx-auto rounded shadow-2xs"
+                            alt="Preview / Model reference"
+                          />
+                          <span class="text-[11px] text-gray-500 leading-tight text-left hidden xl:inline-block">
+                            {previewImageFile.value
+                              ? currentLanguage.value === 'zh'
+                                ? '已上传自定义模特/参考图'
+                                : 'Custom Model Ref Uploaded'
+                              : currentLanguage.value === 'zh'
+                                ? '点击更换模特/封面图'
+                                : 'Click to replace model/cover'}
+                          </span>
+                        </div>
                       ) : (
                         <div class="flex items-center space-x-2 text-xs text-on-surface-variant">
                           <svg
@@ -749,11 +877,14 @@ export const CreationPageComponent = defineComponent({
                               stroke-linecap="round"
                               stroke-linejoin="round"></path>
                           </svg>
-                          <span>Click to upload</span>
+                          <span>{t('dragOrClick')}</span>
                         </div>
                       )}
                     </div>
                   </label>
+                  <p class="mt-1 text-[11px] text-gray-500 leading-snug">
+                    💡 {t('previewImageHint')}
+                  </p>
                   <input
                     type="file"
                     id="preview-image-file"
@@ -986,28 +1117,233 @@ export const CreationPageComponent = defineComponent({
                     )}
 
                     {index === 0 && (
-                      <div class="mt-4 p-3.5 bg-indigo-50/70 rounded-xl border border-indigo-100 shadow-2xs">
-                        <div class="flex items-center justify-between gap-2 mb-2">
-                          <span class="text-xs font-bold text-indigo-900 flex items-center gap-1 shrink-0 whitespace-nowrap">
-                            <span>{t('demoAssetsTitle')}</span>
-                          </span>
+                      <div class="space-y-3 mt-4">
+                        <div class="p-3.5 bg-indigo-50/70 rounded-xl border border-indigo-100 shadow-2xs">
+                          <div class="flex items-center justify-between gap-2 mb-2">
+                            <span class="text-xs font-bold text-indigo-900 flex items-center gap-1 shrink-0 whitespace-nowrap">
+                              <span>{t('demoAssetsTitle')}</span>
+                            </span>
+                          </div>
+                          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {DEMO_PRODUCTS.map((prod) => {
+                              const isSelected =
+                                step.imageInputs[0]?.previewUrl === prod.dataUrl;
+                              return (
+                                <button
+                                  type="button"
+                                  key={prod.id}
+                                  onClick={() => loadDemoProduct(step, prod)}
+                                  class={`p-2 text-left rounded-lg bg-white border transition-all flex items-center gap-2 group cursor-pointer ${
+                                    isSelected
+                                      ? 'border-indigo-600 ring-2 ring-indigo-500/20 shadow-xs'
+                                      : 'border-indigo-100 hover:border-indigo-500 hover:shadow-sm'
+                                  }`}>
+                                  <img
+                                    src={prod.dataUrl}
+                                    alt={prod.name}
+                                    class="w-9 h-9 rounded-md object-cover border border-indigo-100 shrink-0"
+                                  />
+                                  <div class="overflow-hidden">
+                                    <div class="text-xs font-bold text-gray-800 group-hover:text-indigo-600 truncate">
+                                      {currentLanguage.value === 'zh'
+                                        ? prod.name
+                                        : prod.nameEn}
+                                    </div>
+                                    <div class="text-[10px] text-indigo-600/80 font-medium truncate">
+                                      {isSelected ? '✓ 当前已选商品' : '点击一键填入'}
+                                    </div>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                          {DEMO_PRODUCTS.map((prod) => (
-                            <button
-                              type="button"
-                              key={prod.id}
-                              onClick={() => loadDemoProduct(step, prod)}
-                              class="p-2 text-left rounded-lg bg-white border border-indigo-100 hover:border-indigo-500 hover:shadow-sm transition-all flex items-center gap-2 group">
-                              <span class="text-lg">{prod.icon}</span>
-                              <div class="overflow-hidden">
-                                <div class="text-xs font-bold text-gray-800 group-hover:text-indigo-600 truncate">
-                                  {currentLanguage.value === 'zh' ? prod.name : prod.nameEn}
-                                </div>
-                                <div class="text-[10px] text-gray-500 truncate">一键填入</div>
-                              </div>
-                            </button>
-                          ))}
+
+                        <div class="p-3.5 bg-purple-50/70 rounded-xl border border-purple-200/80 shadow-2xs">
+                          <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                            <span class="text-xs font-bold text-purple-950 flex items-center gap-1.5">
+                              <span>
+                                {currentLanguage.value === 'zh'
+                                  ? '👤 预设模特 / 穿搭风格参考图库 (点击缩略图一键选用，也可在顶部自行上传):'
+                                  : '👤 Preset Model / Style Reference Library (1-Click Thumbnail Select):'}
+                              </span>
+                            </span>
+                            {usePreviewAsModelRef.value && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  usePreviewAsModelRef.value = false;
+                                  previewImageFile.value = null;
+                                  previewImagePreview.value =
+                                    props.initialTemplate?.previewImage || null;
+                                }}
+                                class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-white text-purple-800 border border-purple-300 hover:bg-purple-100 transition-colors cursor-pointer whitespace-nowrap">
+                                {currentLanguage.value === 'zh'
+                                  ? '↺ 恢复默认封面 (不指定特定模特)'
+                                  : '↺ Reset to Default Cover'}
+                              </button>
+                            )}
+                          </div>
+                          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {DEMO_MODELS.map((m: DemoModel) => {
+                              const isSelected =
+                                usePreviewAsModelRef.value &&
+                                previewImagePreview.value === m.dataUrl;
+                              return (
+                                <button
+                                  type="button"
+                                  key={m.id}
+                                  onClick={() => {
+                                    previewImageFile.value = null;
+                                    previewImagePreview.value = m.dataUrl;
+                                    usePreviewAsModelRef.value = true;
+                                  }}
+                                  class={`p-1.5 text-left rounded-lg bg-white border transition-all flex items-center gap-2 group cursor-pointer ${
+                                    isSelected
+                                      ? 'border-purple-600 ring-2 ring-purple-500/25 bg-purple-50/30 shadow-xs'
+                                      : 'border-purple-100 hover:border-purple-400 hover:shadow-sm'
+                                  }`}>
+                                  <img
+                                    src={m.dataUrl}
+                                    alt={m.name}
+                                    class="w-10 h-12 rounded-md object-cover border border-purple-100 shrink-0 shadow-2xs"
+                                  />
+                                  <div class="overflow-hidden flex-1">
+                                    <div class="text-xs font-bold text-gray-800 group-hover:text-purple-800 truncate">
+                                      {currentLanguage.value === 'zh'
+                                        ? m.name.split(' (')[0]
+                                        : m.nameEn.split(' (')[0]}
+                                    </div>
+                                    <div class="text-[10px] text-gray-500 truncate">
+                                      {m.styleTag}
+                                    </div>
+                                    <div
+                                      class={`text-[10px] font-semibold truncate ${
+                                        isSelected
+                                          ? 'text-purple-700'
+                                          : 'text-purple-500/80'
+                                      }`}>
+                                      {isSelected ? '✨ 已启用参考' : '点击选用模特'}
+                                    </div>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {index === 1 && (
+                      <div class="mt-4 p-3.5 bg-amber-50/70 rounded-xl border border-amber-200/80 shadow-2xs space-y-3">
+                        <div>
+                          <div class="flex items-center justify-between gap-2 mb-2">
+                            <span class="text-xs font-bold text-amber-950 flex items-center gap-1 shrink-0 whitespace-nowrap">
+                              <span>
+                                {currentLanguage.value === 'zh'
+                                  ? '✨ 100% 透明底品牌 Logo 矩阵 (Nano Banana 3 · models/gempix-3 生成，点击缩略图一键选用):'
+                                  : '✨ 100% Transparent Brand Logo Matrix (Nano Banana 3 · models/gempix-3):'}
+                              </span>
+                            </span>
+                          </div>
+                          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {DEMO_LOGOS.map((logo) => {
+                              const isSelected =
+                                step.imageInputs[0]?.previewUrl === logo.dataUrl;
+                              return (
+                                <button
+                                  type="button"
+                                  key={logo.id}
+                                  onClick={() => {
+                                    if (step.imageInputs[0]) {
+                                      step.imageInputs[0].previewUrl =
+                                        logo.dataUrl;
+                                      step.imageInputs[0].defaultFileName = `${logo.id}.png`;
+                                    }
+                                  }}
+                                  class={`p-2 text-left rounded-lg bg-white border transition-all flex items-center gap-2 group cursor-pointer ${
+                                    isSelected
+                                      ? 'border-amber-600 ring-2 ring-amber-500/25 shadow-xs'
+                                      : 'border-amber-200 hover:border-amber-500 hover:shadow-sm'
+                                  }`}>
+                                  <img
+                                    src={logo.dataUrl}
+                                    alt={logo.name}
+                                    class="h-9 w-16 object-contain rounded p-1 border border-gray-200 shrink-0"
+                                    style="background-image: conic-gradient(#e9ecef 25%, #ffffff 0 50%, #e9ecef 0 75%, #ffffff 0); background-size: 8px 8px;"
+                                  />
+                                  <div class="overflow-hidden">
+                                    <div class="text-xs font-bold text-gray-800 group-hover:text-amber-800 truncate">
+                                      {logo.name.split(' (')[0]}
+                                    </div>
+                                    <div class="text-[10px] text-gray-500 truncate">
+                                      {logo.category || '透明底 PNG'}
+                                    </div>
+                                    <div class="text-[10px] text-emerald-700 font-semibold truncate">
+                                      {isSelected ? '✓ 当前已选 Logo' : '透明 RGBA · 选用'}
+                                    </div>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* 📐 设计师免改提示词版式控制器：方位 & 大小 */}
+                        <div class="pt-2.5 border-t border-amber-200/70 flex flex-col gap-2">
+                          <div class="flex flex-wrap items-center justify-between gap-2">
+                            <span class="text-[11px] font-bold text-amber-950 flex items-center gap-1 whitespace-nowrap">
+                              <span>
+                                {currentLanguage.value === 'zh'
+                                  ? '📐 设计师版式控制 (免改提示词 · 指定 Logo 摆放方位):'
+                                  : '📐 Designer Layout Control (Logo Placement):'}
+                              </span>
+                            </span>
+                            <div class="flex flex-wrap items-center gap-1">
+                              {LOGO_POSITIONS.map((pos) => (
+                                <button
+                                  type="button"
+                                  key={pos.id}
+                                  onClick={() => (logoPosition.value = pos.id)}
+                                  class={`px-2 py-0.5 text-[11px] font-semibold rounded-md border transition-all cursor-pointer whitespace-nowrap ${
+                                    logoPosition.value === pos.id
+                                      ? 'bg-amber-700 text-white border-amber-800 shadow-2xs'
+                                      : 'bg-white text-gray-700 border-amber-200 hover:border-amber-500'
+                                  }`}>
+                                  {currentLanguage.value === 'zh'
+                                    ? pos.labelZh
+                                    : pos.labelEn}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div class="flex flex-wrap items-center justify-between gap-2">
+                            <span class="text-[11px] font-bold text-amber-950 flex items-center gap-1 whitespace-nowrap">
+                              <span>
+                                {currentLanguage.value === 'zh'
+                                  ? '🔍 Logo 视觉占比 (Scale):'
+                                  : '🔍 Logo Visual Scale:'}
+                              </span>
+                            </span>
+                            <div class="flex flex-wrap items-center gap-1">
+                              {LOGO_SCALES.map((sc) => (
+                                <button
+                                  type="button"
+                                  key={sc.id}
+                                  onClick={() => (logoScale.value = sc.id)}
+                                  class={`px-2.5 py-0.5 text-[11px] font-semibold rounded-md border transition-all cursor-pointer whitespace-nowrap ${
+                                    logoScale.value === sc.id
+                                      ? 'bg-amber-700 text-white border-amber-800 shadow-2xs'
+                                      : 'bg-white text-gray-700 border-amber-200 hover:border-amber-500'
+                                  }`}>
+                                  {currentLanguage.value === 'zh'
+                                    ? sc.labelZh
+                                    : sc.labelEn}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -1017,13 +1353,26 @@ export const CreationPageComponent = defineComponent({
                         <label
                           for={`${step.id}-${imgIndex}-file`}
                           class="block cursor-pointer">
-                          <div class="p-4 border-2 border-dashed border-outline rounded-lg text-center hover:bg-gray-50 flex items-center justify-center min-h-[100px] bg-gray-50">
+                          <div
+                            class="p-4 border-2 border-dashed border-outline rounded-lg text-center hover:bg-gray-50 flex flex-col items-center justify-center min-h-[100px] bg-gray-50"
+                            style={
+                              index === 1 && imageInput.previewUrl
+                                ? 'background-image: conic-gradient(#e9ecef 25%, #ffffff 0 50%, #e9ecef 0 75%, #ffffff 0); background-size: 16px 16px;'
+                                : undefined
+                            }>
                             {imageInput.previewUrl ? (
-                              <img
-                                src={imageInput.previewUrl}
-                                class="max-h-48 mx-auto rounded-lg"
-                                alt="Image preview"
-                              />
+                              <>
+                                <img
+                                  src={imageInput.previewUrl}
+                                  class="max-h-48 mx-auto rounded-lg"
+                                  alt="Image preview"
+                                />
+                                {index === 1 && (
+                                  <span class="mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
+                                    ✨ 100% 透明背景 PNG (Alpha=0 · 无底框 · models/gempix-3)
+                                  </span>
+                                )}
+                              </>
                             ) : (
                               <div>
                                 <svg
@@ -1168,90 +1517,153 @@ export const CreationPageComponent = defineComponent({
 
               {/* Results Column */}
               <div class="lg:col-span-1 space-y-6 sticky top-[80px]">
-                {Object.values(results).map((result: StepResult) => (
-                  <div key={result.id} class="material-card">
-                    <h2 class="text-lg font-bold mb-4">
-                      {t('stepResult')}: <span class="font-medium">{result.title}</span>
-                    </h2>
-                    <div class="aspect-square bg-gray-100 rounded-lg flex items-center justify-center p-2">
-                      {result.isLoading ? (
-                        <div class="flex flex-col items-center justify-center h-full">
-                          <svg
-                            class="animate-spin h-8 w-8 text-primary"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24">
-                            <circle
-                              class="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              stroke-width="4"></circle>
-                            <path
-                              class="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          <p class="mt-2 text-sm text-on-surface-variant">
-                            {t('running')}
-                          </p>
-                        </div>
-                      ) : result.imageUrl ? (
-                        <div class="flex flex-col w-full h-full">
-                          <div class="relative group w-full flex-grow rounded-lg overflow-hidden bg-white flex items-center justify-center min-h-[220px]">
-                            <img
-                              src={result.imageUrl}
-                              class="max-h-72 w-full object-contain rounded-lg"
-                              alt="Generated image"
-                            />
-                            <div
-                              onClick={() =>
-                                emit('open-preview', result.imageUrl)
-                              }
-                              class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg cursor-pointer">
-                              <span class="text-white text-xs font-bold bg-black/70 px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm">
-                                <span>🔍 点击放大预览</span>
-                              </span>
-                            </div>
-                          </div>
+                {steps.map((stepObj, rIndex) => {
+                  const result = results[stepObj.id];
+                  if (!result) return null;
+                  const meta = stepMeta[stepObj.id];
+                  const baseStepResult = rIndex > 0 ? results[steps[0].id] : null;
+                  const displayedImageUrl =
+                    meta?.compareBase && baseStepResult?.imageUrl
+                      ? baseStepResult.imageUrl
+                      : result.imageUrl;
 
-                          {/* 商用交付工具箱 */}
-                          <div class="mt-3 pt-3 border-t border-gray-200 space-y-2">
-                            <button
-                              type="button"
-                              onClick={() => sendToResizer(result.imageUrl!)}
-                              class="material-button material-button-primary w-full py-2.5 text-xs font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white flex items-center justify-center gap-1.5 shadow-sm rounded-lg transition-all">
-                              <span>{t('sendToResizer')}</span>
-                            </button>
-                            <div class="grid grid-cols-2 gap-2">
+                  return (
+                    <div key={result.id} class="material-card">
+                      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <h2 class="text-base font-bold text-gray-900">
+                          {t('stepResult')}: <span class="font-medium">{result.title}</span>
+                        </h2>
+                        {result.imageUrl && (
+                          <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                              {aspectRatio.value}
+                            </span>
+                            {meta?.dimensions && (
+                              <span class="px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold bg-gray-100 text-gray-700 border border-gray-200">
+                                {meta.dimensions}
+                              </span>
+                            )}
+                            {meta?.durationSec && (
+                              <span class="px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                ⏱️ {meta.durationSec}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div class="aspect-square bg-gray-100 rounded-lg flex items-center justify-center p-2">
+                        {result.isLoading ? (
+                          <div class="flex flex-col items-center justify-center h-full">
+                            <svg
+                              class="animate-spin h-8 w-8 text-primary"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24">
+                              <circle
+                                class="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                stroke-width="4"></circle>
+                              <path
+                                class="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <p class="mt-2 text-sm text-on-surface-variant">
+                              {t('running')}
+                            </p>
+                          </div>
+                        ) : displayedImageUrl ? (
+                          <div class="flex flex-col w-full h-full">
+                            <div class="relative group w-full flex-grow rounded-lg overflow-hidden bg-white flex items-center justify-center min-h-[220px]">
+                              <img
+                                src={displayedImageUrl}
+                                class="max-h-72 w-full object-contain rounded-lg"
+                                alt="Generated image"
+                              />
+                              {meta?.compareBase && (
+                                <span class="absolute top-2 left-2 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-600 text-white shadow-sm">
+                                  👁️ 正在检视 Step 1 无标底图
+                                </span>
+                              )}
+                              <div
+                                onClick={() =>
+                                  emit('open-preview', displayedImageUrl)
+                                }
+                                class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg cursor-pointer">
+                                <span class="text-white text-xs font-bold bg-black/70 px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm">
+                                  <span>🔍 点击放大检视细节</span>
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* 商用交付工具箱 */}
+                            <div class="mt-3 pt-3 border-t border-gray-200 space-y-2">
+                              {rIndex > 0 && baseStepResult?.imageUrl && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (stepMeta[stepObj.id]) {
+                                      stepMeta[stepObj.id].compareBase =
+                                        !stepMeta[stepObj.id].compareBase;
+                                    }
+                                  }}
+                                  class={`w-full py-1.5 text-xs font-bold rounded-lg border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                                    meta?.compareBase
+                                      ? 'bg-amber-100 text-amber-900 border-amber-400'
+                                      : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-amber-50 hover:text-amber-900'
+                                  }`}>
+                                  <span>
+                                    {meta?.compareBase
+                                      ? '✨ 切回 Step 2 品牌成品图 (After Logo)'
+                                      : '👁️ 对比 Step 1 无标底图 (Before / After)'}
+                                  </span>
+                                </button>
+                              )}
                               <button
                                 type="button"
-                                onClick={() => downloadImage(result.imageUrl!, `${templateName.value || 'ad-creative'}.png`)}
-                                class="material-button material-button-secondary text-xs py-1.5 font-semibold flex items-center justify-center gap-1 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg">
-                                <span>{t('downloadPng')}</span>
+                                onClick={() => sendToResizer(result.imageUrl!)}
+                                class="material-button material-button-primary w-full py-2.5 text-xs font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white flex items-center justify-center gap-1.5 shadow-sm rounded-lg transition-all">
+                                <span>{t('sendToResizer')}</span>
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => copyImageToClipboard(result.imageUrl!)}
-                                class="material-button material-button-secondary text-xs py-1.5 font-semibold flex items-center justify-center gap-1 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg">
-                                <span>{t('copyImage')}</span>
-                              </button>
+                              <div class="grid grid-cols-2 gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    downloadImage(
+                                      result.imageUrl!,
+                                      `${templateName.value || 'ad-creative'}_step${rIndex + 1}.png`,
+                                    )
+                                  }
+                                  class="material-button material-button-secondary text-xs py-1.5 font-semibold flex items-center justify-center gap-1 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg">
+                                  <span>{t('downloadPng')}</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    copyImageToClipboard(result.imageUrl!)
+                                  }
+                                  class="material-button material-button-secondary text-xs py-1.5 font-semibold flex items-center justify-center gap-1 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg">
+                                  <span>{t('copyImage')}</span>
+                                </button>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ) : result.error ? (
-                        <p class="text-red-500 text-center p-4 text-sm">
-                          {result.error}
-                        </p>
-                      ) : (
-                        <p class="text-on-surface-variant text-sm text-center">
-                          {t('outputPlaceholder')}
-                        </p>
-                      )}
+                        ) : result.error ? (
+                          <p class="text-red-500 text-center p-4 text-sm">
+                            {result.error}
+                          </p>
+                        ) : (
+                          <p class="text-on-surface-variant text-sm text-center">
+                            {t('outputPlaceholder')}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>

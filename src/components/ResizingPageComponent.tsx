@@ -12,10 +12,17 @@ import {
   useVertexAi,
 } from '../constants';
 import {PLACEHOLDERS} from '../data/placeholders';
-import {ai, callGenAIApi} from '../services/ai';
+import {ai, callGenAIApi, reportClientLog} from '../services/ai';
 import {Template} from '../types';
 import {t, currentLanguage, getModelDisplayName} from '../i18n';
-import {DEMO_PRODUCTS, DemoProduct} from '../data/demoAssets';
+import {DEMO_PRODUCTS, DEMO_MODELS, DemoProduct} from '../data/demoAssets';
+
+const SIZE_SPECS: Record<string, {nameZh: string; nameEn: string; tag: string}> = {
+  '970x250': {nameZh: '巨幅通栏 (IAB Billboard)', nameEn: 'IAB Billboard', tag: 'PC 首页顶通'},
+  '300x600': {nameZh: '半页摩天大楼 (Half-Page)', nameEn: 'Half-Page Ad', tag: '高视觉冲击竖版'},
+  '300x250': {nameZh: '黄金中矩形 (Medium Rect)', nameEn: 'Medium Rectangle', tag: 'GDN 最高曝光版位'},
+  '336x280': {nameZh: '大矩形展位 (Large Rect)', nameEn: 'Large Rectangle', tag: '正文内嵌黄金位'},
+};
 
 /**
  * A component that allows users to intelligently resize and adapt product images
@@ -52,16 +59,17 @@ export const ResizingPageComponent = defineComponent({
       '336x280': true,
     });
     const getEstimatedDimensions = (size: string) => {
-      if (size === '970x250') return '1024x256 (顶部全宽横幅)';
-      if (size === '300x600') return '384x688 (侧边半版大屏)';
-      if (size === '300x250') return '576x464 (黄金中矩形)';
-      if (size === '336x280') return '576x464 (大矩形展位)';
-      return 'Unknown';
+      if (size === '970x250') return '1344x768 → 970x250';
+      if (size === '300x600') return '768x1344 → 300x600';
+      if (size === '300x250') return '1152x896 → 300x250';
+      if (size === '336x280') return '1152x896 → 336x280';
+      return 'Auto';
     };
     const productImage = ref<File | null>(null);
     const productImagePreview = ref<string | null>(
       props.initialSourceImage || DEMO_PRODUCTS[0].dataUrl,
     );
+    const fromCreationStudio = ref<boolean>(Boolean(props.initialSourceImage));
 
     watch(
       () => props.initialSourceImage,
@@ -69,6 +77,7 @@ export const ResizingPageComponent = defineComponent({
         if (newVal) {
           productImagePreview.value = newVal;
           productImage.value = null;
+          fromCreationStudio.value = true;
         }
       },
     );
@@ -76,6 +85,13 @@ export const ResizingPageComponent = defineComponent({
     const loadDemoProduct = (product: DemoProduct) => {
       productImagePreview.value = product.dataUrl;
       productImage.value = null;
+      fromCreationStudio.value = false;
+    };
+
+    const loadPresetPoster = (url: string) => {
+      productImagePreview.value = url;
+      productImage.value = null;
+      fromCreationStudio.value = false;
     };
 
     const defaultPrompt =
@@ -101,6 +117,7 @@ export const ResizingPageComponent = defineComponent({
           error: string | null;
           hasRun: boolean;
           geminiDimensions: string | null;
+          durationSec: string | null;
         }
       >
     >({});
@@ -114,6 +131,7 @@ export const ResizingPageComponent = defineComponent({
         error: null,
         hasRun: false,
         geminiDimensions: null,
+        durationSec: null,
       };
     });
 
@@ -121,6 +139,7 @@ export const ResizingPageComponent = defineComponent({
       const file = (event.target as HTMLInputElement).files?.[0];
       if (file) {
         productImage.value = file;
+        fromCreationStudio.value = false;
         const reader = new FileReader();
         reader.onload = (e) => {
           productImagePreview.value = e.target?.result as string;
@@ -129,13 +148,16 @@ export const ResizingPageComponent = defineComponent({
       }
     };
 
+    const dataUrlToBase64 = (dataUrl: string) =>
+      dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+
     const resolveImageBase64 = async (
       urlOrDataUrl: string,
     ): Promise<{base64: string; mimeType: string}> => {
       if (urlOrDataUrl.startsWith('data:')) {
         const mimeType =
           urlOrDataUrl.match(/data:(.*?);base64/)?.[1] || 'image/png';
-        const base64 = urlOrDataUrl.split(',')[1];
+        const base64 = dataUrlToBase64(urlOrDataUrl);
         return {base64, mimeType};
       }
       const res = await fetch(urlOrDataUrl);
@@ -153,10 +175,12 @@ export const ResizingPageComponent = defineComponent({
 
     const runForSize = async (size: string) => {
       const result = results[size];
+      const startTime = Date.now();
       result.isLoading = true;
       result.error = null;
       result.geminiImageUrl = null;
       result.croppedImageUrl = null;
+      result.durationSec = null;
 
       try {
         if (!productImagePreview.value) {
@@ -177,8 +201,8 @@ export const ResizingPageComponent = defineComponent({
         if (!placeholderDataUrl) {
           throw new Error(`Placeholder for ${size} not found.`);
         }
-        const placeholderBase64 = dataUrlToBase64(placeholderDataUrl);
-        const placeholderMimeType = 'image/png'; // Assuming PNG from script
+        const {base64: placeholderBase64, mimeType: placeholderMimeType} =
+          await resolveImageBase64(placeholderDataUrl);
         parts.push({
           inlineData: {data: placeholderBase64, mimeType: placeholderMimeType},
         });
@@ -189,21 +213,16 @@ export const ResizingPageComponent = defineComponent({
         const modelToUse = genaiModel.value || DEFAULT_IMAGE_MODEL;
 
         let apiAspectRatio = '1:1';
-        if (size === '970x250') apiAspectRatio = '4:1';
+        if (size === '970x250') apiAspectRatio = '16:9';
         if (size === '300x600') apiAspectRatio = '9:16';
-        if (size === '300x250') apiAspectRatio = '5:4';
-        if (size === '336x280') apiAspectRatio = '5:4';
-
-        let apiResolution = '1K';
-        if (size === '970x250') apiResolution = modelToUse === 'gemini-3.1-flash-image' ? '512' : '1K';
-        if (size === '300x600') apiResolution = modelToUse === 'gemini-3.1-flash-image' ? '512' : '1K';
-        if (size === '300x250') apiResolution = modelToUse === 'gemini-3.1-flash-image' ? '512' : '1K';
-        if (size === '336x280') apiResolution = modelToUse === 'gemini-3.1-flash-image' ? '512' : '1K';
+        if (size === '300x250') apiAspectRatio = '4:3';
+        if (size === '336x280') apiAspectRatio = '4:3';
 
         let response;
         if (useVertexAi) {
           response = await callGenAIApi({
             model: modelToUse,
+            stepTag: `Resizer ${size}`,
             contents: {
               role: 'user',
               parts,
@@ -212,7 +231,6 @@ export const ResizingPageComponent = defineComponent({
               responseModalities: [Modality.IMAGE],
               imageConfig: {
                 aspectRatio: apiAspectRatio,
-                imageSize: apiResolution,
               },
             },
           });
@@ -224,7 +242,6 @@ export const ResizingPageComponent = defineComponent({
               responseModalities: [Modality.IMAGE],
               imageConfig: {
                 aspectRatio: apiAspectRatio,
-                imageSize: apiResolution,
               },
             },
           });
@@ -236,18 +253,28 @@ export const ResizingPageComponent = defineComponent({
         if (imagePart?.inlineData) {
           const geminiImage = `data:image/png;base64,${imagePart.inlineData.data}`;
           result.geminiImageUrl = geminiImage;
+          result.durationSec = ((Date.now() - startTime) / 1000).toFixed(1) + 's';
 
           // Step 2: 代码精确裁剪
           const [targetW, targetH] = size.split('x').map(Number);
           const {croppedImageUrl, originalWidth, originalHeight} = await cropImageToSize(geminiImage, targetW, targetH);
           result.croppedImageUrl = croppedImageUrl;
-          result.geminiDimensions = `${originalWidth}x${originalHeight}`;
+          result.geminiDimensions = `${originalWidth}×${originalHeight}`;
         } else {
           throw new Error('No image returned.');
         }
       } catch (e: unknown) {
         console.error(`Error generating for ${size}:`, e);
-        result.error = e instanceof Error ? e.message : 'Error occurred.';
+        const errMsg = e instanceof Error ? e.message : 'Error occurred.';
+        result.error = errMsg;
+        reportClientLog({
+          status: 499,
+          model: genaiModel.value || DEFAULT_IMAGE_MODEL,
+          stepTag: `Resizer ${size}`,
+          durationMs: Date.now() - startTime,
+          prompt: prompt.value,
+          error: errMsg,
+        });
       } finally {
         result.isLoading = false;
         result.hasRun = true;
@@ -255,11 +282,27 @@ export const ResizingPageComponent = defineComponent({
     };
 
     const runAllSelected = async () => {
-      const promises = sizes
-        .filter((size) => selectedSizes[size])
-        .map((size) => runForSize(size));
+      const activeSizes = sizes.filter((size) => selectedSizes[size]);
+      const promises = activeSizes.map(async (size, idx) => {
+        if (idx > 0) {
+          await new Promise((r) => setTimeout(r, idx * 350));
+        }
+        return runForSize(size);
+      });
       await Promise.all(promises);
     };
+
+    const downloadSingleSize = (size: string) => {
+      const url = results[size]?.croppedImageUrl;
+      if (!url) return;
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `ad_banner_${size}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+
     const hasCroppedImages = computed(() => {
       return sizes.some((size) => results[size]?.croppedImageUrl);
     });
@@ -296,7 +339,14 @@ export const ResizingPageComponent = defineComponent({
           {/* Settings Section */}
           <div class="flex flex-wrap justify-between items-center gap-4 mb-2">
             <div>
-              <h2 class="text-xl font-bold">{t('resizerTitle')}</h2>
+              <h2 class="text-xl font-bold flex items-center gap-2">
+                <span>{t('resizerTitle')}</span>
+                {fromCreationStudio.value && (
+                  <span class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    ✨ 已载入创作中心合成母版
+                  </span>
+                )}
+              </h2>
               <p class="text-xs text-gray-500 mt-1">{t('resizerSubtitle')}</p>
             </div>
             <div class="flex items-center space-x-3 shrink-0">
@@ -336,37 +386,87 @@ export const ResizingPageComponent = defineComponent({
                 </select>
               </div>
 
-              <div class="md:col-span-2 p-3 bg-indigo-50/70 rounded-xl border border-indigo-100 flex flex-wrap items-center justify-between gap-2">
-                <span class="text-xs font-bold text-indigo-900 flex items-center gap-1 shrink-0 whitespace-nowrap">
-                  <span>💡 {currentLanguage.value === 'zh' ? '示例商品一键填入 (无需自己准备图片):' : '1-Click Sample Products (No upload needed):'}</span>
-                </span>
-                <div class="flex flex-wrap items-center gap-1.5">
-                  {DEMO_PRODUCTS.map((prod) => (
-                    <button
-                      type="button"
-                      key={prod.id}
-                      onClick={() => loadDemoProduct(prod)}
-                      class="px-2.5 py-1 text-xs rounded-lg bg-white border border-indigo-100 text-gray-800 font-semibold hover:border-indigo-500 hover:text-indigo-600 transition-all shadow-2xs flex items-center gap-1 shrink-0 whitespace-nowrap">
-                      <span>{prod.icon}</span>
-                      <span class="whitespace-nowrap">{currentLanguage.value === 'zh' ? prod.name : prod.nameEn}</span>
-                    </button>
-                  ))}
+              <div class="md:col-span-2 p-3 bg-indigo-50/70 rounded-xl border border-indigo-100 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-indigo-900 flex items-center gap-1 shrink-0 whitespace-nowrap">
+                    <span>
+                      💡{' '}
+                      {currentLanguage.value === 'zh'
+                        ? '示例商品 & 商业海报母版一键填入 (带缩略图预览):'
+                        : '1-Click Sample Products & Master Posters:'}
+                    </span>
+                  </span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                  {DEMO_PRODUCTS.map((prod) => {
+                    const isSelected = productImagePreview.value === prod.dataUrl;
+                    return (
+                      <button
+                        type="button"
+                        key={prod.id}
+                        onClick={() => loadDemoProduct(prod)}
+                        class={`p-1.5 text-left rounded-lg bg-white border transition-all flex items-center gap-2 cursor-pointer ${
+                          isSelected
+                            ? 'border-indigo-600 ring-2 ring-indigo-500/20 shadow-xs'
+                            : 'border-indigo-100 hover:border-indigo-500'
+                        }`}>
+                        <img
+                          src={prod.dataUrl}
+                          alt={prod.name}
+                          class="w-8 h-8 rounded object-cover border border-gray-100 shrink-0"
+                        />
+                        <span class="text-xs font-bold text-gray-800 truncate">
+                          {currentLanguage.value === 'zh' ? prod.name : prod.nameEn}
+                        </span>
+                      </button>
+                    );
+                  })}
+                  {DEMO_MODELS.slice(0, 2).map((poster) => {
+                    const isSelected = productImagePreview.value === poster.dataUrl;
+                    return (
+                      <button
+                        type="button"
+                        key={poster.id}
+                        onClick={() => loadPresetPoster(poster.dataUrl)}
+                        class={`p-1.5 text-left rounded-lg bg-white border transition-all flex items-center gap-2 cursor-pointer ${
+                          isSelected
+                            ? 'border-purple-600 ring-2 ring-purple-500/20 shadow-xs'
+                            : 'border-purple-100 hover:border-purple-500'
+                        }`}>
+                        <img
+                          src={poster.dataUrl}
+                          alt={poster.name}
+                          class="w-8 h-8 rounded object-cover border border-purple-100 shrink-0"
+                        />
+                        <span class="text-xs font-bold text-purple-900 truncate">
+                          {currentLanguage.value === 'zh'
+                            ? poster.name.split(' (')[0]
+                            : poster.nameEn.split(' (')[0]}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               <div>
                 <label class="block text-sm font-medium text-on-surface-variant mb-1 whitespace-nowrap">
-                  {currentLanguage.value === 'zh' ? '原版商品主体图 (Asset 1)' : 'Product Image (Asset 1)'}
+                  {currentLanguage.value === 'zh' ? '原版商品主体图 / 待延展母版 (Asset 1)' : 'Source Ad / Product Image (Asset 1)'}
                 </label>
                 <div class="flex items-center space-x-4">
                   <label class="cursor-pointer flex-1">
-                    <div class="p-2 border-2 border-dashed border-outline rounded-lg text-center hover:bg-gray-50 flex items-center justify-center min-h-[42px] bg-gray-50">
+                    <div class="p-2 border-2 border-dashed border-outline rounded-lg text-center hover:bg-gray-50 flex items-center justify-center min-h-[56px] bg-gray-50">
                       {productImagePreview.value ? (
-                        <img
-                          src={productImagePreview.value}
-                          class="max-h-12 mx-auto rounded"
-                          alt="Product preview"
-                        />
+                        <div class="flex items-center gap-3">
+                          <img
+                            src={productImagePreview.value}
+                            class="max-h-14 mx-auto rounded shadow-2xs"
+                            alt="Product preview"
+                          />
+                          <span class="text-xs text-gray-500">
+                            {currentLanguage.value === 'zh' ? '点击上传更换母版' : 'Click to replace'}
+                          </span>
+                        </div>
                       ) : (
                         <span class="text-sm text-on-surface-variant">
                           Click to upload Product Image
@@ -383,21 +483,46 @@ export const ResizingPageComponent = defineComponent({
                 </div>
               </div>
 
-              <div>
-                <label class="block text-sm font-medium text-on-surface-variant mb-2 whitespace-nowrap">
-                  {t('targetSizesLabel')}
-                </label>
-                <div class="grid grid-cols-2 gap-2">
-                  {sizes.map((size) => (
-                    <label key={size} class="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        v-model={selectedSizes[size]}
-                        class="form-checkbox h-4 w-4 text-primary rounded border-outline focus:ring-primary"
-                      />
-                      <span class="text-sm text-on-surface">{size}</span>
-                    </label>
-                  ))}
+              <div class="md:col-span-2">
+                <div class="flex items-center justify-between mb-2">
+                  <label class="block text-sm font-medium text-on-surface-variant whitespace-nowrap">
+                    {t('targetSizesLabel')}
+                  </label>
+                  <div class="flex items-center gap-2 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => sizes.forEach((s) => (selectedSizes[s] = true))}
+                      class="text-indigo-600 hover:underline font-semibold cursor-pointer">
+                      {currentLanguage.value === 'zh' ? '全选 4 大规格' : 'Select All'}
+                    </button>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  {sizes.map((size) => {
+                    const spec = SIZE_SPECS[size];
+                    return (
+                      <label
+                        key={size}
+                        class={`p-2.5 rounded-xl border flex items-start gap-2.5 cursor-pointer transition-all ${
+                          selectedSizes[size]
+                            ? 'bg-indigo-50/50 border-indigo-400 shadow-2xs'
+                            : 'bg-white border-gray-200 hover:border-gray-300'
+                        }`}>
+                        <input
+                          type="checkbox"
+                          v-model={selectedSizes[size]}
+                          class="form-checkbox h-4 w-4 mt-0.5 text-primary rounded border-outline focus:ring-primary"
+                        />
+                        <div class="overflow-hidden">
+                          <div class="text-sm font-black text-gray-900 font-mono">{size}</div>
+                          <div class="text-[11px] font-semibold text-indigo-800 truncate">
+                            {currentLanguage.value === 'zh' ? spec?.nameZh : spec?.nameEn}
+                          </div>
+                          <div class="text-[10px] text-gray-500 truncate">{spec?.tag}</div>
+                        </div>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -426,21 +551,42 @@ export const ResizingPageComponent = defineComponent({
             {sizes.map((size) => {
               const result = results[size];
               if (!selectedSizes[size]) return null;
+              const spec = SIZE_SPECS[size];
 
               return (
                 <div key={size} class="material-card flex flex-col justify-between col-span-1 lg:col-span-2">
                   <div>
-                    <div class="flex justify-between items-center mb-2">
-                      <h3 class="font-bold text-md">{size}</h3>
-                      <button
-                        onClick={() => runForSize(size)}
-                        disabled={result.isLoading || !productImagePreview.value}
-                        class="text-xs font-medium text-primary hover:underline disabled:text-gray-400 disabled:no-underline cursor-pointer disabled:cursor-not-allowed"
-                      >
-                        {result.isLoading
-                          ? (result.hasRun ? t('btnRetrying') : t('btnGenerating'))
-                          : (result.hasRun ? t('btnRetry') : t('btnRun'))}
-                      </button>
+                    <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
+                      <div class="flex items-center gap-2">
+                        <h3 class="font-black text-base font-mono text-gray-900">{size}</h3>
+                        <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-800 border border-indigo-200">
+                          {currentLanguage.value === 'zh' ? spec?.nameZh : spec?.nameEn}
+                        </span>
+                        {result.durationSec && (
+                          <span class="px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            ⏱️ {result.durationSec}
+                          </span>
+                        )}
+                      </div>
+                      <div class="flex items-center gap-2">
+                        {result.croppedImageUrl && (
+                          <button
+                            type="button"
+                            onClick={() => downloadSingleSize(size)}
+                            class="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer">
+                            📥 {currentLanguage.value === 'zh' ? `下载 ${size}` : `Download ${size}`}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => runForSize(size)}
+                          disabled={result.isLoading || !productImagePreview.value}
+                          class="px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                        >
+                          {result.isLoading
+                            ? (result.hasRun ? t('btnRetrying') : t('btnGenerating'))
+                            : (result.hasRun ? t('btnRetry') : t('btnRun'))}
+                        </button>
+                      </div>
                     </div>
                     {result.isLoading ? (
                       <div class="flex flex-col items-center justify-center h-48">
@@ -492,7 +638,9 @@ export const ResizingPageComponent = defineComponent({
 
                         {/* Step 2: Cropped */}
                         <div>
-                          <div class="text-xs font-medium text-gray-500 mb-1">{t('croppedImageLabel')}</div>
+                          <div class="text-xs font-medium text-gray-500 mb-1">
+                            {t('croppedImageLabel')} ({size} px)
+                          </div>
                           <div class="aspect-square bg-gray-100 rounded-md flex items-center justify-center overflow-hidden relative">
                             {result.croppedImageUrl ? (
                               <img

@@ -5,7 +5,7 @@
 import {Modality, Part} from '@google/genai';
 import JSZip from 'jszip';
 import {computed, reactive, ref} from 'vue';
-import {useVertexAi} from '../constants';
+import {DEFAULT_IMAGE_MODEL, useVertexAi} from '../constants';
 import {ai, callGenAIApi} from '../services/ai';
 import {BulkJob} from '../types';
 import {cropImageToSize} from '../services/image';
@@ -13,19 +13,12 @@ import {PLACEHOLDERS} from '../data/placeholders';
 
 /**
  * A composable function for managing the bulk resizing of images.
- * It handles:
- * - Parsing a CSV file to get data for each bulk job (ID and Image URL).
- * - Expanding jobs based on selected target sizes.
- * - Generating resized images by calling the GenAI API with placeholders.
- * - Precisely cropping the generated images.
- * - Managing the state of bulk jobs.
- * - Providing functionality to start, rerun, and download results as a ZIP file.
  */
 export function useBulkResizing() {
   const bulkJobs = reactive<BulkJob[]>([]);
   const isBulkProcessing = ref(false);
   const isBulkDownloading = ref(false);
-  const bulkGenaiModel = ref('gemini-3.1-flash-image'); // Default to flash for resizing
+  const bulkGenaiModel = ref(DEFAULT_IMAGE_MODEL);
 
   let originalCsvData: Array<Record<string, string>> = [];
 
@@ -166,30 +159,22 @@ export function useBulkResizing() {
   };
 
   const urlToGeminiPart = async (url: string) => {
-    const CORS_PROXY_URL = 'https://corsproxy.io/?';
-
     try {
-      const response = await fetch(CORS_PROXY_URL + encodeURIComponent(url), {
-        referrerPolicy: 'no-referrer',
-      });
+      const fetchTarget =
+        url.startsWith('/') || url.startsWith('data:')
+          ? url
+          : '/image-proxy?url=' + encodeURIComponent(url);
+      const response = await fetch(fetchTarget);
       if (!response.ok) {
-        throw new Error(`Proxy fetch failed with status: ${response.statusText} (${response.status})`);
+        throw new Error(
+          `Image fetch failed with status: ${response.statusText} (${response.status})`,
+        );
       }
       const blob = await response.blob();
       return await blobToGeminiPart(blob);
-    } catch (proxyError: unknown) {
-      console.warn(`CORS proxy fetch for ${url} failed. Attempting direct fetch.`);
-      try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`Direct fetch failed with status: ${response.statusText} (${response.status})`);
-        }
-        const blob = await response.blob();
-        return await blobToGeminiPart(blob);
-      } catch (directError: unknown) {
-        console.error(`Direct fetch for ${url} also failed:`, directError);
-        throw new Error(`Could not load image from URL.`);
-      }
+    } catch (err: unknown) {
+      console.error(`Fetch for ${url} failed:`, err);
+      throw new Error(`Could not load image from URL: ${url}`);
     }
   };
 
@@ -229,38 +214,29 @@ export function useBulkResizing() {
         if (!placeholderDataUrl) {
           throw new Error(`Placeholder for ${size} not found.`);
         }
-        const placeholderBase64 = dataUrlToBase64(placeholderDataUrl);
-        parts.push({
-          inlineData: {data: placeholderBase64, mimeType: 'image/png'},
-        });
+        parts.push(await urlToGeminiPart(placeholderDataUrl));
 
         // Prompt
         parts.push({text: defaultPrompt});
 
         let apiAspectRatio = '1:1';
-        if (size === '970x250') apiAspectRatio = '4:1';
+        if (size === '970x250') apiAspectRatio = '16:9';
         if (size === '300x600') apiAspectRatio = '9:16';
-        if (size === '300x250') apiAspectRatio = '5:4';
-        if (size === '336x280') apiAspectRatio = '5:4';
-
-        let apiResolution = '1K';
-        if (size === '970x250') apiResolution = modelToUse === 'gemini-3.1-flash-image' ? '512' : '1K';
-        if (size === '300x600') apiResolution = modelToUse === 'gemini-3.1-flash-image' ? '512' : '1K';
-        if (size === '300x250') apiResolution = modelToUse === 'gemini-3.1-flash-image' ? '512' : '1K';
-        if (size === '336x280') apiResolution = modelToUse === 'gemini-3.1-flash-image' ? '512' : '1K';
+        if (size === '300x250') apiAspectRatio = '4:3';
+        if (size === '336x280') apiAspectRatio = '4:3';
 
         let response;
         const commonConfig = {
           responseModalities: [Modality.IMAGE],
           imageConfig: {
             aspectRatio: apiAspectRatio,
-            imageSize: apiResolution,
           },
         };
 
         if (useVertexAi) {
           response = await callGenAIApi({
             model: modelToUse,
+            stepTag: `BulkResizer ${job.rowData.id}`,
             contents: {
               role: 'user',
               parts,

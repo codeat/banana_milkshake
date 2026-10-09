@@ -34,6 +34,26 @@ export const ai = new GoogleGenAI({
  * @param payload The object to send as the request body.
  * @return The JSON response from the server.
  */
+export async function reportClientLog(entry: {
+  status?: number;
+  model?: string;
+  stepTag?: string;
+  durationMs?: number;
+  imagesCount?: number;
+  prompt?: string;
+  error?: string | null;
+}) {
+  try {
+    await fetch('/api/client-log', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(entry),
+    });
+  } catch (_) {
+    // Non-blocking telemetry
+  }
+}
+
 export async function callGenAIApi(payload: object) {
   const response = await fetch('/generate-content', {
     method: 'POST',
@@ -44,7 +64,14 @@ export async function callGenAIApi(payload: object) {
   });
 
   if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+    let errText = `HTTP error! status: ${response.status}`;
+    try {
+      const errJson = await response.json();
+      if (errJson?.message || errJson?.error) {
+        errText = `${response.status}: ${errJson.message || errJson.error}`;
+      }
+    } catch (_) {}
+    throw new Error(errText);
   }
 
   const result = await response.json();

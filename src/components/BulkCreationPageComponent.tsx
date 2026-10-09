@@ -118,6 +118,29 @@ export const BulkCreationPageComponent = defineComponent({
       emit('file-upload', file);
     };
 
+    const loadDemoCsvBatch = () => {
+      const cols = requiredColumns.value;
+      const sampleAssets = [
+        '/products/demo_perfume.png',
+        '/products/demo_sneaker.png',
+        '/products/demo_watch.png',
+      ];
+      const rows = [cols.join(',')];
+      for (let i = 0; i < 3; i++) {
+        const vals = cols.map((c) => {
+          if (c === 'id') return `campaign_item_0${i + 1}`;
+          if (c.startsWith('asset')) return sampleAssets[i % sampleAssets.length];
+          return `Luxury Feature ${i + 1}`;
+        });
+        rows.push(vals.join(','));
+      }
+      const csvContent = rows.join('\n');
+      const demoFile = new File([csvContent], 'demo_bulk_campaign.csv', {
+        type: 'text/csv',
+      });
+      emit('file-upload', demoFile);
+    };
+
     const startBulkGeneration = () => {
       emit('start-generation');
     };
@@ -200,7 +223,16 @@ export const BulkCreationPageComponent = defineComponent({
                 </div>
               </div>
               <div class="material-card">
-                <h2 class="text-lg font-bold mb-4">{currentLanguage.value === 'zh' ? '2. 上传数据集 (CSV)' : '2. Upload Data'}</h2>
+                <div class="flex items-center justify-between mb-3">
+                  <h2 class="text-lg font-bold">{currentLanguage.value === 'zh' ? '2. 上传数据集 (CSV)' : '2. Upload Data'}</h2>
+                  <button
+                    type="button"
+                    onClick={loadDemoCsvBatch}
+                    disabled={props.isProcessing}
+                    class="px-2.5 py-1 text-xs font-bold rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition-colors cursor-pointer">
+                    ⚡ {currentLanguage.value === 'zh' ? '一键载入演示批次 (3组)' : 'Load Demo Batch (3 rows)'}
+                  </button>
+                </div>
                 <input
                   type="file"
                   onChange={handleFileUpload}
@@ -211,35 +243,21 @@ export const BulkCreationPageComponent = defineComponent({
                 />
                 <div class="mt-3 text-xs text-on-surface-variant bg-gray-50 p-3 rounded-lg">
                   <p class="font-semibold mb-1">
-                    Your CSV must contain a unique{' '}
-                    <code class="text-primary">id</code> column to name each
-                    output image.
+                    {currentLanguage.value === 'zh' ? 'CSV 需包含唯一命名列 ' : 'Your CSV must contain a unique '}
+                    <code class="text-primary">id</code>
                   </p>
                   {requiredColumns.value.length > 1 ? (
                     <div>
                       <p class="font-semibold mt-2 mb-1">
-                        It must also contain columns for dynamic image assets
-                        and text variables:
+                        {currentLanguage.value === 'zh' ? '当前模板所需动态列:' : 'Required dynamic columns:'}
                       </p>
                       <code class="text-primary">
                         {requiredColumns.value
                           .filter((c) => c !== 'id')
                           .join(', ')}
                       </code>
-                      <p class="mt-2">
-                        Image asset values should be public image URLs. Max 100
-                        rows.
-                      </p>
                     </div>
-                  ) : (
-                    <div>
-                      <p class="mt-2">
-                        This template has no dynamic assets, but you can upload
-                        a CSV with just an <code class="text-primary">id</code>{' '}
-                        column to generate multiple named images.
-                      </p>
-                    </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
               <div class="material-card">
