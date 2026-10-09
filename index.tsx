@@ -25,6 +25,7 @@ import {useBulkResizing} from './src/composables/useBulkResizing';
 import {useGoogleDrive} from './src/composables/useGoogleDrive';
 import {DEFAULT_IMAGE_MODEL} from './src/constants';
 import {Template} from './src/types';
+import {TEMPLATES} from './src/data/templates';
 import {t, currentLanguage, toggleLanguage} from './src/i18n';
 
 declare const process: {env: {[key: string]: string | undefined}};
@@ -83,6 +84,9 @@ const App = {
 
     onMounted(async () => {
       window.addEventListener('keydown', handleKeyDown);
+      if (!currentTemplateForCreation.value) {
+        currentTemplateForCreation.value = TEMPLATES[0];
+      }
       try {
         const config = await fetchConfig();
         initializeDrive(config);
@@ -202,7 +206,34 @@ const App = {
       }
     };
 
+    const initialSourceImage = ref<string | null>(null);
+
+    const openResizerPage = (sourceImageUrl?: string) => {
+      const resizerTpl =
+        TEMPLATES.find((t) => t.id === 'ad-image-resizer') || TEMPLATES[1];
+      currentTemplateForCreation.value = resizerTpl;
+      if (sourceImageUrl) {
+        initialSourceImage.value = sourceImageUrl;
+      }
+      currentPage.value = 'resizer';
+      isMobileMenuOpen.value = false;
+    };
+
+    const handleSendToResizer = (imageUrl: string) => {
+      openResizerPage(imageUrl);
+    };
+
     const switchPage = (page: string) => {
+      if (
+        page === 'creation' &&
+        (!currentTemplateForCreation.value ||
+          currentTemplateForCreation.value.id === 'ad-image-resizer')
+      ) {
+        currentTemplateForCreation.value = TEMPLATES[0];
+      }
+      if (page === 'experiment' && !currentTemplateForBulk.value) {
+        currentTemplateForBulk.value = TEMPLATES[0];
+      }
       currentPage.value = page;
       isMobileMenuOpen.value = false;
     };
@@ -280,6 +311,8 @@ const App = {
       switch (currentPage.value) {
         case 'library':
           return LibraryPageComponent;
+        case 'resizer':
+          return ResizingPageComponent;
         case 'experiment':
           if (currentTemplateForBulk.value?.id === 'ad-image-resizer') {
             return BulkResizingPageComponent;
@@ -304,6 +337,9 @@ const App = {
       signIn,
       signOut,
       switchPage,
+      openResizerPage,
+      handleSendToResizer,
+      initialSourceImage,
       useTemplate,
       createNewTemplate,
       handleSaveToDrive,
@@ -355,6 +391,7 @@ const App = {
                 <!-- Desktop Navigation -->
                 <nav class="hidden md:flex items-center space-x-2">
                     <div @click="switchPage('creation')" class="nav-item" :class="{active: currentPage === 'creation'}">{{ t('creationCenter') }}</div>
+                    <div @click="openResizerPage()" class="nav-item" :class="{active: currentPage === 'resizer'}">{{ t('adResizerNav') }}</div>
                     <div @click="switchPage('library')" class="nav-item" :class="{active: currentPage === 'library'}">{{ t('templateLibrary') }}</div>
                     <div @click="switchPage('experiment')" class="nav-item" :class="{active: currentPage === 'experiment'}">{{ t('bulkCreation') }}</div>
                 </nav>
@@ -363,7 +400,7 @@ const App = {
                 <div class="hidden md:flex items-center space-x-3" id="auth-container">
                     <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold shadow-xs">
                         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <span>Vertex AI 已就绪 · 免登录即用</span>
+                        <span>Vertex AI Global · Gemini 3.1 & 3.8</span>
                     </div>
                     <button @click="toggleLanguage" class="material-button material-button-secondary text-xs px-3 py-1.5 flex items-center gap-1 font-medium bg-gray-50 border border-gray-300 hover:bg-gray-100 transition-colors">
                         <span>🌐</span>
@@ -389,13 +426,14 @@ const App = {
         <div v-if="isMobileMenuOpen" class="md:hidden" id="mobile-menu">
             <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-surface border-b border-outline">
                 <div @click="switchPage('creation')" class="mobile-nav-item" :class="{active: currentPage === 'creation'}">{{ t('creationCenter') }}</div>
+                <div @click="openResizerPage()" class="mobile-nav-item" :class="{active: currentPage === 'resizer'}">{{ t('adResizerNav') }}</div>
                 <div @click="switchPage('library')" class="mobile-nav-item" :class="{active: currentPage === 'library'}">{{ t('templateLibrary') }}</div>
                 <div @click="switchPage('experiment')" class="mobile-nav-item" :class="{active: currentPage === 'experiment'}">{{ t('bulkCreation') }}</div>
                 <div class="border-t border-outline my-2"></div>
                 <div class="px-2 py-2 space-y-2">
                      <div class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
                          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                         <span>Vertex AI 已就绪 · 免登录即用</span>
+                         <span>Vertex AI Global · Gemini 3.1 & 3.8</span>
                      </div>
                      <button @click="toggleLanguage" class="material-button material-button-secondary w-full text-xs py-2 flex items-center justify-center gap-1">
                          <span>🌐</span>
@@ -410,6 +448,7 @@ const App = {
             :is="pageComponent"
             :is-signed-in="isSignedIn"
             :initial-template="currentTemplateForCreation"
+            :initial-source-image="initialSourceImage"
             :selected-template="currentTemplateForBulk"
             :is-saving="isSaving"
             :list-templates="listTemplates"
@@ -439,6 +478,7 @@ const App = {
             @change-template="switchPage('library')"
             @save-template-to-drive="handleSaveToDrive"
             @open-preview="openPreview"
+            @send-to-resizer="handleSendToResizer"
 
             @file-upload="handleBulkFileUpload"
             @start-generation="startBulkGeneration"

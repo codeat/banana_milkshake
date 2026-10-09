@@ -29,19 +29,23 @@ export const useVertexAi = process.env.USE_VERTEX_AI;
  * Can be overridden by the `DEFAULT_TEXT_MODEL` environment variable.
  */
 export const DEFAULT_TEXT_MODEL =
-  process.env.DEFAULT_TEXT_MODEL || 'gemini-2.5-pro';
+  process.env.DEFAULT_TEXT_MODEL || 'gemini-3.8-flash';
 /**
  * The default model to use for image generation.
  * Can be overridden by the `DEFAULT_IMAGE_MODEL` environment variable.
  */
 export const DEFAULT_IMAGE_MODEL =
-  process.env.DEFAULT_IMAGE_MODEL || 'gemini-2.5-flash-image';
+  process.env.DEFAULT_IMAGE_MODEL || 'gemini-3.1-flash-image';
 /**
  * A list of supported models for image generation.
  * Can be overridden by the `SUPPORTED_IMAGE_MODEL` environment variable.
  */
 export const SUPPORTED_IMAGE_MODELS: string[] = (process.env
   .SUPPORTED_IMAGE_MODEL as unknown as string[]) || [
+  'gemini-3.1-flash-image',
+  'gemini-3-pro-image',
+  'gemini-nano-banana-2.1',
+  'gemini-3.1-flash-lite-image',
   'gemini-2.5-flash-image',
 ];
 

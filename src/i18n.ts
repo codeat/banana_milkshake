@@ -77,6 +77,15 @@ export const messages = {
     outputPlaceholder: '生成的商业广告物料将在此实时高清呈现',
     uploadPromptImage: '上传样图以提取风格提示词',
     dragOrClick: '点击或拖拽上传图片',
+    adResizerNav: '📐 广告尺寸智能重构',
+    runFullPipeline: '🚀 一键生成完整商业大片',
+    runningPipeline: 'Vertex AI 全链路生成中 (约 8-15 秒)...',
+    demoAssetsTitle: '💡 示例商品一键填入 (无需自己准备图片):',
+    sceneChipsTitle: '⚡ 场景风格灵感:',
+    sendToResizer: '📐 一键多尺寸智能重构 (Google Ads 6 大规格)',
+    downloadPng: '⬇️ 下载高清 PNG',
+    copyImage: '📋 复制图片',
+    imageCopied: '已复制图片到剪贴板！',
 
     // Ad Resizer
     resizerTitle: '智能广告尺寸重构矩阵 (Ad Image Resizer)',
@@ -156,6 +165,15 @@ export const messages = {
     outputPlaceholder: 'Generated advertising visual will appear here',
     uploadPromptImage: 'Upload moodboard/style guide image to extract prompt',
     dragOrClick: 'Click or drag image to upload',
+    adResizerNav: '📐 Ad Resizer Matrix',
+    runFullPipeline: '🚀 Run Full Creative Pipeline',
+    runningPipeline: 'Vertex AI Generating Complete Asset (8-15s)...',
+    demoAssetsTitle: '💡 1-Click Sample Products (No upload needed):',
+    sceneChipsTitle: '⚡ Scene Inspiration:',
+    sendToResizer: '📐 Adapt to Google Ads Standard Sizes',
+    downloadPng: '⬇️ Download PNG',
+    copyImage: '📋 Copy Image',
+    imageCopied: 'Image copied to clipboard!',
 
     // Ad Resizer
     resizerTitle: 'Ad Image Resizer Matrix',
@@ -187,4 +205,24 @@ export const messages = {
 export function t(key: keyof typeof messages['zh']): string {
   const lang = currentLanguage.value;
   return messages[lang]?.[key] || messages['zh'][key] || key;
+}
+
+export function getModelDisplayName(model: string): string {
+  const lang = currentLanguage.value;
+  const mapZh: Record<string, string> = {
+    'gemini-3.1-flash-image': 'gemini-3.1-flash-image (推荐 · 极速高清生图)',
+    'gemini-3-pro-image': 'gemini-3-pro-image (旗舰 · 影视级高精画质)',
+    'gemini-nano-banana-2.1': 'gemini-nano-banana-2.1 (新一代 · 创意特效)',
+    'gemini-3.1-flash-lite-image': 'gemini-3.1-flash-lite-image (轻量 · 极速出图)',
+    'gemini-2.5-flash-image': 'gemini-2.5-flash-image (兼容基准 · 经典模型)',
+  };
+  const mapEn: Record<string, string> = {
+    'gemini-3.1-flash-image': 'gemini-3.1-flash-image (Recommended · Ultra Fast & HD)',
+    'gemini-3-pro-image': 'gemini-3-pro-image (Flagship · Studio Quality)',
+    'gemini-nano-banana-2.1': 'gemini-nano-banana-2.1 (Next-Gen · Creative Effects)',
+    'gemini-3.1-flash-lite-image': 'gemini-3.1-flash-lite-image (Lightweight · Low Latency)',
+    'gemini-2.5-flash-image': 'gemini-2.5-flash-image (Legacy Baseline)',
+  };
+  const map = lang === 'zh' ? mapZh : mapEn;
+  return map[model] || model;
 }

@@ -76,17 +76,20 @@ const viteConfig = defineConfig(({mode}) => {
         env.GOOGLE_CLOUD_PROJECT,
       ),
       'process.env.GOOGLE_CLOUD_LOCATION': JSON.stringify(
-        env.GOOGLE_CLOUD_LOCATION,
+        env.GOOGLE_CLOUD_LOCATION || 'global',
       ),
       'process.env.USE_VERTEX_AI': true,
-      'process.env.DEFAULT_TEXT_MODEL': JSON.stringify('gemini-2.5-pro'),
+      'process.env.DEFAULT_TEXT_MODEL': JSON.stringify(
+        env.DEFAULT_TEXT_MODEL || 'gemini-3.8-flash',
+      ),
       'process.env.DEFAULT_IMAGE_MODEL': JSON.stringify(
-        'gemini-2.5-flash-image',
+        env.DEFAULT_IMAGE_MODEL || 'gemini-3.1-flash-image',
       ),
       'process.env.SUPPORTED_IMAGE_MODEL': [
-        'gemini-3.1-flash-lite-image',
         'gemini-3.1-flash-image',
         'gemini-3-pro-image',
+        'gemini-nano-banana-2.1',
+        'gemini-3.1-flash-lite-image',
         'gemini-2.5-flash-image',
       ],
       'process.env.APP_VERSION': JSON.stringify(version),

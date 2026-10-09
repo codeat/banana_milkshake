@@ -5,7 +5,7 @@ import {cropImageToSize} from '../services/image';
 
 import {Modality, Part} from '@google/genai';
 import JSZip from 'jszip';
-import {computed, defineComponent, PropType, reactive, ref} from 'vue';
+import {computed, defineComponent, PropType, reactive, ref, watch} from 'vue';
 import {
   DEFAULT_IMAGE_MODEL,
   SUPPORTED_IMAGE_MODELS,
@@ -14,7 +14,8 @@ import {
 import {PLACEHOLDERS} from '../data/placeholders';
 import {ai, callGenAIApi} from '../services/ai';
 import {Template} from '../types';
-import {t, currentLanguage} from '../i18n';
+import {t, currentLanguage, getModelDisplayName} from '../i18n';
+import {DEMO_PRODUCTS, DemoProduct} from '../data/demoAssets';
 
 /**
  * A component that allows users to intelligently resize and adapt product images
@@ -27,6 +28,10 @@ export const ResizingPageComponent = defineComponent({
   props: {
     initialTemplate: {
       type: Object as PropType<Template | null>,
+      default: null,
+    },
+    initialSourceImage: {
+      type: String as PropType<string | null>,
       default: null,
     },
     isSaving: {
@@ -47,14 +52,31 @@ export const ResizingPageComponent = defineComponent({
       '336x280': true,
     });
     const getEstimatedDimensions = (size: string) => {
-      if (size === '970x250') return '1024x256';
-      if (size === '300x600') return '384x688';
-      if (size === '300x250') return '576x464';
-      if (size === '336x280') return '576x464';
+      if (size === '970x250') return '1024x256 (顶部全宽横幅)';
+      if (size === '300x600') return '384x688 (侧边半版大屏)';
+      if (size === '300x250') return '576x464 (黄金中矩形)';
+      if (size === '336x280') return '576x464 (大矩形展位)';
       return 'Unknown';
     };
     const productImage = ref<File | null>(null);
-    const productImagePreview = ref<string | null>(null);
+    const productImagePreview = ref<string | null>(
+      props.initialSourceImage || DEMO_PRODUCTS[0].dataUrl,
+    );
+
+    watch(
+      () => props.initialSourceImage,
+      (newVal) => {
+        if (newVal) {
+          productImagePreview.value = newVal;
+          productImage.value = null;
+        }
+      },
+    );
+
+    const loadDemoProduct = (product: DemoProduct) => {
+      productImagePreview.value = product.dataUrl;
+      productImage.value = null;
+    };
 
     const defaultPrompt =
       `Intelligently adapt and resize the product from Asset 1 to perfectly fit the dimensions and layout suggested by Asset 2 (the placeholder). The final image must be a professional advertisement of the specified size.
@@ -290,15 +312,33 @@ export const ResizingPageComponent = defineComponent({
                   class="material-input bg-white">
                   {supportedModels.map((model) => (
                     <option key={model} value={model}>
-                      {model}
+                      {getModelDisplayName(model)}
                     </option>
                   ))}
                 </select>
               </div>
 
+              <div class="md:col-span-2 p-3 bg-indigo-50/70 rounded-xl border border-indigo-100 flex flex-wrap items-center justify-between gap-2">
+                <span class="text-xs font-bold text-indigo-900 flex items-center gap-1">
+                  <span>💡 示例商品一键填入 (无需自己准备图片):</span>
+                </span>
+                <div class="flex flex-wrap items-center gap-1.5">
+                  {DEMO_PRODUCTS.map((prod) => (
+                    <button
+                      type="button"
+                      key={prod.id}
+                      onClick={() => loadDemoProduct(prod)}
+                      class="px-2.5 py-1 text-xs rounded-lg bg-white border border-indigo-100 text-gray-800 font-semibold hover:border-indigo-500 hover:text-indigo-600 transition-all shadow-2xs flex items-center gap-1">
+                      <span>{prod.icon}</span>
+                      <span>{currentLanguage.value === 'zh' ? prod.name : prod.nameEn}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div>
                 <label class="block text-sm font-medium text-on-surface-variant mb-1">
-                  Product Image (Asset 1)
+                  {currentLanguage.value === 'zh' ? '原版商品主体图 (Asset 1)' : 'Product Image (Asset 1)'}
                 </label>
                 <div class="flex items-center space-x-4">
                   <label class="cursor-pointer flex-1">

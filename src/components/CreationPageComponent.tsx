@@ -32,7 +32,9 @@ import {
   TemplateStep,
   TextVariable,
 } from '../types';
-import {t, currentLanguage} from '../i18n';
+import {t, currentLanguage, getModelDisplayName} from '../i18n';
+import {DEMO_PRODUCTS, DEMO_LOGOS, PROMPT_SCENE_CHIPS, DemoProduct} from '../data/demoAssets';
+import {TEMPLATES} from '../data/templates';
 
 /**
  * A Vue component for creating and editing templates.
@@ -64,6 +66,7 @@ export const CreationPageComponent = defineComponent({
     'change-template',
     'create-new',
     'open-preview',
+    'send-to-resizer',
   ],
   setup(props, {emit}) {
     const templateName = ref('');
@@ -97,14 +100,27 @@ export const CreationPageComponent = defineComponent({
       template.steps.forEach((stepData, index) => {
         const stepId = `step-${index}`;
         const imageInputs: ImageInput[] = stepData.image_slots.map(
-          (slot, i) => ({
-            assetName: slot.asset_name,
-            isStatic: slot.is_static,
-            file: null,
-            previewUrl: staticAssets[slot.asset_name] || null,
-            defaultFileName: slot.default_file_name,
-            isLoading: false,
-          }),
+          (slot, i) => {
+            let preview = staticAssets[slot.asset_name] || null;
+            let defaultFileName = slot.default_file_name;
+            if (!preview) {
+              if (index === 0 && i === 0) {
+                preview = DEMO_PRODUCTS[0].dataUrl;
+                defaultFileName = 'sample_luxury_perfume.png';
+              } else if (index === 1 && (slot.asset_name === 'asset2' || i === 0)) {
+                preview = DEMO_LOGOS[0].dataUrl;
+                defaultFileName = 'sample_lumina_logo.png';
+              }
+            }
+            return {
+              assetName: slot.asset_name,
+              isStatic: slot.is_static,
+              file: null,
+              previewUrl: preview,
+              defaultFileName: defaultFileName,
+              isLoading: false,
+            };
+          },
         );
 
         const textVariables: TextVariable[] = (
@@ -153,14 +169,15 @@ export const CreationPageComponent = defineComponent({
             isLoadingTemplate.value = false;
           }
         } else {
-          isLoadingTemplate.value = false;
-          templateName.value = '';
-          aspectRatio.value = '1:1';
-          genaiModel.value = DEFAULT_IMAGE_MODEL;
-          steps.splice(0, steps.length);
-          Object.keys(results).forEach((key) => delete results[key]);
-          previewImageFile.value = null;
-          previewImagePreview.value = null;
+          // Zero Cold-Start: Load default flagship template instead of empty screen
+          isLoadingTemplate.value = true;
+          try {
+            await loadTemplate(TEMPLATES[0]);
+          } catch (e) {
+            console.error('Failed to load default template:', e);
+          } finally {
+            isLoadingTemplate.value = false;
+          }
         }
       },
       {immediate: true},
@@ -426,6 +443,86 @@ export const CreationPageComponent = defineComponent({
       }
     };
 
+    const loadDemoProduct = (step: StepState, product: DemoProduct) => {
+      if (step.imageInputs[0]) {
+        step.imageInputs[0].previewUrl = product.dataUrl;
+        step.imageInputs[0].defaultFileName = `${product.id}.png`;
+      }
+      if (product.recommendedPrompt) {
+        step.prompt = product.recommendedPrompt;
+      }
+    };
+
+    const appendSceneChip = (step: StepState, sceneText: string) => {
+      if (step.prompt.trim()) {
+        step.prompt = `${step.prompt.trim()} ${sceneText}`;
+      } else {
+        step.prompt = sceneText;
+      }
+    };
+
+    const isPipelineRunning = ref(false);
+
+    const runFullPipeline = async () => {
+      if (steps.length === 0) return;
+      isPipelineRunning.value = true;
+      try {
+        // Step 0 execution
+        await runStep(steps[0], 0);
+        const step0Result = results[steps[0].id];
+        if (!step0Result?.imageUrl) {
+          throw new Error(step0Result?.error || 'Step 1 generation did not produce an image.');
+        }
+
+        // Step 1 (Logo overlay step, if present)
+        if (steps.length > 1) {
+          const step1 = steps[1];
+          if (step1.imageInputs[0] && !step1.imageInputs[0].previewUrl) {
+            step1.imageInputs[0].previewUrl = DEMO_LOGOS[0].dataUrl;
+            step1.imageInputs[0].defaultFileName = 'sample_lumina_logo.png';
+          }
+          try {
+            await runStep(step1, 1);
+          } catch (e) {
+            console.warn('Step 2 logo overlay failed, maintaining Step 1 high-res image as final result:', e);
+            results[step1.id].imageUrl = step0Result.imageUrl;
+            results[step1.id].error = null;
+          }
+        }
+      } catch (err: unknown) {
+        console.error('Pipeline failed:', err);
+      } finally {
+        isPipelineRunning.value = false;
+      }
+    };
+
+    const sendToResizer = (imageUrl: string) => {
+      emit('send-to-resizer', imageUrl);
+    };
+
+    const downloadImage = (url: string, filename = 'ad-creative.png') => {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    };
+
+    const copyImageToClipboard = async (url: string) => {
+      try {
+        const res = await fetch(url);
+        const blob = await res.blob();
+        await navigator.clipboard.write([
+          new ClipboardItem({[blob.type]: blob}),
+        ]);
+        alert(t('imageCopied'));
+      } catch (e) {
+        console.error('Clipboard copy failed, downloading instead:', e);
+        downloadImage(url);
+      }
+    };
+
     const saveTemplate = async () => {
       if (!templateName.value.trim()) {
         alert('Please enter a name for your template.');
@@ -512,13 +609,37 @@ export const CreationPageComponent = defineComponent({
           <div class="flex flex-col space-y-8">
             {/* Top Section: Settings */}
             <div class="material-card">
-              <div class="flex justify-between items-center mb-6">
-                <h2 class="text-lg font-bold">{t('templateSettings')}</h2>
-                <button
-                  onClick={() => emit('change-template')}
-                  class="text-sm text-primary font-medium hover:underline">
-                  {currentLanguage.value === 'zh' ? '← 返回模板库' : '← Back to Library'}
-                </button>
+              <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                <div>
+                  <h2 class="text-xl font-black text-gray-900 flex items-center gap-2">
+                    <span>{t('templateSettings')}</span>
+                    <span class="text-xs px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 font-bold">
+                      {genaiModel.value}
+                    </span>
+                  </h2>
+                </div>
+                <div class="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={runFullPipeline}
+                    disabled={isPipelineRunning.value}
+                    class="material-button material-button-primary bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-700 hover:to-indigo-700 text-white font-black text-sm px-6 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+                    {isPipelineRunning.value ? (
+                      <svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24" fill="none">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                      </svg>
+                    ) : (
+                      <span>🚀</span>
+                    )}
+                    <span>{isPipelineRunning.value ? t('runningPipeline') : t('runFullPipeline')}</span>
+                  </button>
+                  <button
+                    onClick={() => emit('change-template')}
+                    class="text-sm text-primary font-medium hover:underline px-2 py-1">
+                    {currentLanguage.value === 'zh' ? '← 返回模板库' : '← Back to Library'}
+                  </button>
+                </div>
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div>
@@ -552,7 +673,7 @@ export const CreationPageComponent = defineComponent({
                     class="material-input bg-white">
                     {supportedModels.map((model) => (
                       <option key={model} value={model}>
-                        {model}
+                        {getModelDisplayName(model)}
                       </option>
                     ))}
                   </select>
@@ -715,6 +836,22 @@ export const CreationPageComponent = defineComponent({
                       rows={3}
                       placeholder={t('promptPlaceholder')}></textarea>
 
+                    {/* 场景风格灵感快捷芯片 */}
+                    <div class="mt-2.5 p-2 bg-gray-50 rounded-lg border border-gray-200/60 flex flex-wrap items-center gap-1.5">
+                      <span class="text-[11px] font-bold text-gray-500 flex items-center gap-1">
+                        <span>{t('sceneChipsTitle')}</span>
+                      </span>
+                      {PROMPT_SCENE_CHIPS.map((chip) => (
+                        <button
+                          type="button"
+                          key={chip.label}
+                          onClick={() => appendSceneChip(step, chip.text)}
+                          class="px-2 py-0.5 text-[11px] font-medium rounded-md bg-white text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-300 transition-all border border-gray-200 shadow-2xs">
+                          {chip.label}
+                        </button>
+                      ))}
+                    </div>
+
                     <div class="text-right mt-2 text-sm">
                       {step.isGeneratingPrompt ? (
                         <span class="text-on-surface-variant inline-flex items-center">
@@ -829,6 +966,33 @@ export const CreationPageComponent = defineComponent({
                         <p class="text-sm text-on-surface-variant">
                           Uses result from Step {index} as asset1.
                         </p>
+                      </div>
+                    )}
+
+                    {index === 0 && (
+                      <div class="mt-4 p-3.5 bg-indigo-50/70 rounded-xl border border-indigo-100 shadow-2xs">
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                          <span class="text-xs font-bold text-indigo-900 flex items-center gap-1">
+                            <span>{t('demoAssetsTitle')}</span>
+                          </span>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          {DEMO_PRODUCTS.map((prod) => (
+                            <button
+                              type="button"
+                              key={prod.id}
+                              onClick={() => loadDemoProduct(step, prod)}
+                              class="p-2 text-left rounded-lg bg-white border border-indigo-100 hover:border-indigo-500 hover:shadow-sm transition-all flex items-center gap-2 group">
+                              <span class="text-lg">{prod.icon}</span>
+                              <div class="overflow-hidden">
+                                <div class="text-xs font-bold text-gray-800 group-hover:text-indigo-600 truncate">
+                                  {currentLanguage.value === 'zh' ? prod.name : prod.nameEn}
+                                </div>
+                                <div class="text-[10px] text-gray-500 truncate">一键填入</div>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     )}
 
@@ -1018,30 +1182,46 @@ export const CreationPageComponent = defineComponent({
                           </p>
                         </div>
                       ) : result.imageUrl ? (
-                        <div class="relative group w-full h-full">
-                          <img
-                            src={result.imageUrl}
-                            class="w-full h-full object-contain rounded-lg"
-                            alt="Generated image"
-                          />
-                          <div
-                            onClick={() =>
-                              emit('open-preview', result.imageUrl)
-                            }
-                            class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg cursor-pointer">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              class="h-10 w-10 text-white"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor">
-                              <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                              />
-                            </svg>
+                        <div class="flex flex-col w-full h-full">
+                          <div class="relative group w-full flex-grow rounded-lg overflow-hidden bg-white flex items-center justify-center min-h-[220px]">
+                            <img
+                              src={result.imageUrl}
+                              class="max-h-72 w-full object-contain rounded-lg"
+                              alt="Generated image"
+                            />
+                            <div
+                              onClick={() =>
+                                emit('open-preview', result.imageUrl)
+                              }
+                              class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg cursor-pointer">
+                              <span class="text-white text-xs font-bold bg-black/70 px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm">
+                                <span>🔍 点击放大预览</span>
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* 商用交付工具箱 */}
+                          <div class="mt-3 pt-3 border-t border-gray-200 space-y-2">
+                            <button
+                              type="button"
+                              onClick={() => sendToResizer(result.imageUrl!)}
+                              class="material-button material-button-primary w-full py-2.5 text-xs font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white flex items-center justify-center gap-1.5 shadow-sm rounded-lg transition-all">
+                              <span>{t('sendToResizer')}</span>
+                            </button>
+                            <div class="grid grid-cols-2 gap-2">
+                              <button
+                                type="button"
+                                onClick={() => downloadImage(result.imageUrl!, `${templateName.value || 'ad-creative'}.png`)}
+                                class="material-button material-button-secondary text-xs py-1.5 font-semibold flex items-center justify-center gap-1 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg">
+                                <span>{t('downloadPng')}</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => copyImageToClipboard(result.imageUrl!)}
+                                class="material-button material-button-secondary text-xs py-1.5 font-semibold flex items-center justify-center gap-1 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg">
+                                <span>{t('copyImage')}</span>
+                              </button>
+                            </div>
                           </div>
                         </div>
                       ) : result.error ? (

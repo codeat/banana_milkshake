@@ -16,8 +16,7 @@
 
 import {PropType, computed, defineComponent, ref, watch} from 'vue';
 import {SUPPORTED_IMAGE_MODELS} from '../constants';
-import {BulkJob, Template, TemplateStep} from '../types';
-import {t, currentLanguage} from '../i18n';
+import {t, currentLanguage, getModelDisplayName} from '../i18n';
 
 /**
  * A Vue component for the bulk image creation page.
@@ -261,7 +260,7 @@ export const BulkCreationPageComponent = defineComponent({
                     class="material-input bg-white">
                     {supportedModels.map((m) => (
                       <option key={m} value={m}>
-                        {m}
+                        {getModelDisplayName(m)}
                       </option>
                     ))}
                   </select>
