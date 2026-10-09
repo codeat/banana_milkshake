@@ -16,6 +16,7 @@
 
 import {DEFAULT_IMAGE_MODEL} from '../constants';
 import {Template} from '../types';
+import {TEMPLATE_VISUALS} from './templateVisuals';
 
 /**
  * An array of predefined templates used for generating image assets.
@@ -26,9 +27,11 @@ import {Template} from '../types';
 export const TEMPLATES: Template[] = [
   {
     id: 'street-snap',
-    name: 'Street Snap',
-    description: 'Generate a fashion street snap for the product .',
-    previewImage: 'https://placehold.co/400x300/d1e3ff/1a73e8?text=Street+Snap',
+    name: '街头潮流街拍 (Street Snap)',
+    description: '为服装与配饰智能合成现代都市街景穿搭大片，光影自然，完美凸显商品版型与质感。',
+    previewImage: TEMPLATE_VISUALS.streetSnap,
+    category: 'fashion',
+    badge: '🔥 潮流爆款',
     aspect_ratio: '4:3',
     genai_model: DEFAULT_IMAGE_MODEL,
     steps: [
@@ -59,10 +62,11 @@ Art Style: Clean crisp editorial street photography. Use bright even professiona
   },
   {
     id: 'virtual-try-on',
-    name: 'Virtual Try-On',
-    description: 'Show the given product on the model.',
-    previewImage:
-      'https://placehold.co/400x300/e8eaed/5f6368?text=Virtual+Try-On',
+    name: '虚拟模特穿搭 (Virtual Try-On)',
+    description: '提取服饰商品结构，自动生成合适肤色与体态的真人模特试穿大片，严格保留剪裁与材质细节。',
+    previewImage: TEMPLATE_VISUALS.virtualTryOn,
+    category: 'fashion',
+    badge: '✨ 模特试穿',
     aspect_ratio: '1:1',
     genai_model: DEFAULT_IMAGE_MODEL,
     steps: [
@@ -100,11 +104,11 @@ Art Style:
   },
   {
     id: 'brand-guideline-based-image-generation',
-    name: 'Brand Guideline Based Image Generation',
-    description:
-      'Generate product images that following a specific layout template or guideline',
-    previewImage:
-      'https://placehold.co/400x300/b39ddb/ffffff?text=Brand+Guideline',
+    name: '品牌视觉规范大片 (Brand Guideline Ad)',
+    description: '严格遵循企业品牌调性、情绪板配色与 Logo 规范，融合商品主体生成专业品牌级电商营销海报。',
+    previewImage: TEMPLATE_VISUALS.brandGuideline,
+    category: 'retail',
+    badge: '🎨 品牌定制',
     aspect_ratio: '4:5',
     genai_model: DEFAULT_IMAGE_MODEL,
     steps: [
@@ -176,11 +180,11 @@ Art Style:
   },
   {
     id: 'brand-guideline-based-multi-product-image-generation',
-    name: 'Brand Guideline Based Multi-product Image Generation',
-    description:
-      'Generate image contain 3 products that following a specific layout template or guideline',
-    previewImage:
-      'https://placehold.co/400x300/b39ddb/ffffff?text=Multi+Product-in-One',
+    name: '多产品组合大片 (Multi-Product Combo)',
+    description: '支持在单一商业构图中协同放置多个产品，自适应透视、阴影投射与空间景深关系，适合套装促销。',
+    previewImage: TEMPLATE_VISUALS.multiProduct,
+    category: 'retail',
+    badge: '📦 套装组合',
     aspect_ratio: '16:9',
     genai_model: DEFAULT_IMAGE_MODEL,
     steps: [
@@ -251,11 +255,11 @@ Art Style:
   },
   {
     id: 'holiday-season',
-    name: 'Holiday Season',
-    description:
-      'Generate image asset for a holiday season following a sample guideline image',
-    previewImage:
-      'https://placehold.co/400x300/c62828/ffffff?text=Holiday+Season',
+    name: '节日大促与季节营销 (Holiday Season)',
+    description: '为商品赋予黑五、圣诞、新年节日氛围视觉背景、礼品包装元素与节日质感光效。',
+    previewImage: TEMPLATE_VISUALS.holidaySeason,
+    category: 'holiday',
+    badge: '🎁 节日大促',
     aspect_ratio: '1:1',
     genai_model: DEFAULT_IMAGE_MODEL,
     steps: [
@@ -336,10 +340,11 @@ Art Style:
   },
   {
     id: 'Text_only_with_model',
-    name: 'Text Only With Model',
-    description: 'Generate ads image with text and 2-3 local human model only',
-    previewImage:
-      'https://placehold.co/400x300/228B22/FFF?text=Text+Only+With+Model',
+    name: '文案驱动模特大片 (Text to Model Ad)',
+    description: '无需底图，仅通过文字描述（品类、模特动作、场景氛围）即可一键从零生成高质量商用模特广告图。',
+    previewImage: TEMPLATE_VISUALS.textToModel,
+    category: 'text',
+    badge: '💡 纯文生图',
     aspect_ratio: '16:9',
     genai_model: DEFAULT_IMAGE_MODEL,
     steps: [
@@ -381,9 +386,11 @@ You are also provided with some text element including headline: {{Headline}}, f
   },
   {
     id: 'Text_only',
-    name: 'Text Only',
-    description: 'Generate ads image with text only',
-    previewImage: 'https://placehold.co/400x300/227C55/FFF?text=Text+Only',
+    name: '纯文本创意直出 (Pure Text to Ad)',
+    description: '根据自然语言描述全流程生成商业摄影级静物大片与广告信息流素材，适合快速验证灵感。',
+    previewImage: TEMPLATE_VISUALS.textOnly,
+    category: 'text',
+    badge: '⚡ 极速出图',
     aspect_ratio: '16:9',
     genai_model: DEFAULT_IMAGE_MODEL,
     steps: [
@@ -425,11 +432,11 @@ You are also provided with some text element including headline: {{Headline}}, f
   },
   {
     id: 'basic_version',
-    name: 'Basic Version',
-    description:
-      'Transfer a product to image creative based on a template image.',
-    previewImage:
-      'https://placehold.co/400x300/fce8b2/e8710a?text=Basic+Version',
+    name: '标准商品静物精修 (Studio Product Shot)',
+    description: '极简纯净影棚光影，高清凸显商品材质、纹理、按键与五金质感，适合电商详情页与主图。',
+    previewImage: TEMPLATE_VISUALS.studioProduct,
+    category: 'retail',
+    badge: '📸 影棚精修',
     aspect_ratio: '16:9',
     genai_model: DEFAULT_IMAGE_MODEL,
     steps: [
@@ -526,9 +533,11 @@ Before finishing, verify:
   },
   {
     id: 'ad-image-resizer',
-    name: 'Ad Image Resizer',
-    description: 'Intelligently adapt and resize product images to multiple standard ad sizes (970x250, 300x600, 300x250, 336x280).',
-    previewImage: 'https://placehold.co/400x300/e8f0fe/1967d2?text=Multi-Sizer',
+    name: '智能广告尺寸重构 (Ad Image Resizer)',
+    description: '一键将商品主体图自适应扩展与智能重构至 Google Ads 6 大标准投放版位（970x250, 300x600, 300x250 等）。',
+    previewImage: TEMPLATE_VISUALS.adResizer,
+    category: 'resize',
+    badge: '📐 6大版位自适应',
     aspect_ratio: '1:1',
     genai_model: DEFAULT_IMAGE_MODEL,
     steps: [

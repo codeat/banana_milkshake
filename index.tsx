@@ -246,8 +246,19 @@ const App = {
       sourceFolderId?: string,
     ) => {
       if (!isSignedIn.value) {
-        alert('Please sign in with Google to save templates.');
-        signIn();
+        // 免登录模式：直接一键导出 JSON 模板至本地
+        try {
+          const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(templateData, null, 2));
+          const downloadAnchor = document.createElement('a');
+          downloadAnchor.setAttribute("href", dataStr);
+          downloadAnchor.setAttribute("download", `${templateData.name || 'custom_template'}.json`);
+          document.body.appendChild(downloadAnchor);
+          downloadAnchor.click();
+          downloadAnchor.remove();
+          alert(currentLanguage.value === 'zh' ? '✅ 免登录模式：已将模板配置以 JSON 文件成功保存并下载至本地！' : 'Saved template configuration locally as JSON.');
+        } catch (e) {
+          console.error(e);
+        }
         return;
       }
       isSaving.value = true;
@@ -348,14 +359,16 @@ const App = {
                     <div @click="switchPage('experiment')" class="nav-item" :class="{active: currentPage === 'experiment'}">{{ t('bulkCreation') }}</div>
                 </nav>
 
-                <!-- Auth & Language Toggle (Desktop) -->
+                <!-- Status & Language Toggle (Desktop) -->
                 <div class="hidden md:flex items-center space-x-3" id="auth-container">
+                    <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold shadow-xs">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span>Vertex AI 已就绪 · 免登录即用</span>
+                    </div>
                     <button @click="toggleLanguage" class="material-button material-button-secondary text-xs px-3 py-1.5 flex items-center gap-1 font-medium bg-gray-50 border border-gray-300 hover:bg-gray-100 transition-colors">
                         <span>🌐</span>
                         <span>{{ currentLanguage === 'zh' ? 'English' : '简体中文' }}</span>
                     </button>
-                    <button v-if="!isSignedIn" @click="signIn" class="material-button material-button-secondary">{{ t('signIn') }}</button>
-                    <button v-if="isSignedIn" @click="signOut" class="material-button material-button-secondary">{{ t('signOut') }}</button>
                 </div>
                 <!-- Mobile Menu Button -->
                 <div class="md:hidden flex items-center">
@@ -380,12 +393,14 @@ const App = {
                 <div @click="switchPage('experiment')" class="mobile-nav-item" :class="{active: currentPage === 'experiment'}">{{ t('bulkCreation') }}</div>
                 <div class="border-t border-outline my-2"></div>
                 <div class="px-2 py-2 space-y-2">
+                     <div class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
+                         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                         <span>Vertex AI 已就绪 · 免登录即用</span>
+                     </div>
                      <button @click="toggleLanguage" class="material-button material-button-secondary w-full text-xs py-2 flex items-center justify-center gap-1">
                          <span>🌐</span>
                          <span>切换语言: {{ currentLanguage === 'zh' ? 'English' : '简体中文' }}</span>
                      </button>
-                     <button v-if="!isSignedIn" @click="signIn" class="material-button material-button-secondary w-full">{{ t('signIn') }}</button>
-                     <button v-if="isSignedIn" @click="signOut" class="material-button material-button-secondary w-full">{{ t('signOut') }}</button>
                 </div>
             </div>
         </div>

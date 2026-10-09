@@ -72,6 +72,8 @@ export interface Template {
   driveFolderId?: string;
   previewImageFileName?: string; // To store original filename from Drive
   genai_model?: string;
+  category?: string;
+  badge?: string;
 }
 
 /**
