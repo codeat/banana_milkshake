@@ -78,15 +78,7 @@ export const ResizingPageComponent = defineComponent({
       productImage.value = null;
     };
 
-    const defaultPromptZh =
-      `智能自适应并重构 Asset 1 中的商品视觉，使其完美适配 Asset 2（版位占位图）所建议的画幅比例与排版布局。最终生成的图像必须是符合指定广告规格的高品质商业物料。
-
-**核心构图规则：**
-* **商品主体居中：** 保持核心商品居中、清晰锐利、自然融合，完好保留原图材质与细节质感。
-* **背景自然延伸：** 确保背景自然无缝延伸并填满全新画幅尺寸，光影一致。
-* **严禁额外元素：** 除原图已有的原生元素外，严禁添加任何额外文字覆盖、水印、Logo 或多余几何图元。`;
-
-    const defaultPromptEn =
+    const defaultPrompt =
       `Intelligently adapt and resize the product from Asset 1 to perfectly fit the dimensions and layout suggested by Asset 2 (the placeholder). The final image must be a professional advertisement of the specified size.
 
 **Key Layout Rules:**
@@ -97,16 +89,7 @@ export const ResizingPageComponent = defineComponent({
 **Strict Restrictions:**
 * **No New Additions:** Apart from the native elements already present in Asset 1, do not add any new text overlays, logos, watermarks, or extra graphic elements.`;
 
-    const prompt = ref(
-      currentLanguage.value === 'zh' ? defaultPromptZh : defaultPromptEn,
-    );
-
-    watch(
-      () => currentLanguage.value,
-      (newLang) => {
-        prompt.value = newLang === 'zh' ? defaultPromptZh : defaultPromptEn;
-      },
-    );
+    const prompt = ref(defaultPrompt);
 
     const results = reactive<
       Record<

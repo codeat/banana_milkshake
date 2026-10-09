@@ -467,9 +467,6 @@ export const CreationPageComponent = defineComponent({
         step.imageInputs[0].previewUrl = product.dataUrl;
         step.imageInputs[0].defaultFileName = `${product.id}.png`;
       }
-      if (product.recommendedPrompt) {
-        step.prompt = product.recommendedPrompt;
-      }
     };
 
     const appendSceneChip = (step: StepState, sceneText: string) => {
