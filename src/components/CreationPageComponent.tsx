@@ -634,12 +634,12 @@ export const CreationPageComponent = defineComponent({
                     </span>
                   </h2>
                 </div>
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3 shrink-0">
                   <button
                     type="button"
                     onClick={runFullPipeline}
                     disabled={isPipelineRunning.value}
-                    class="material-button material-button-primary bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-700 hover:to-indigo-700 text-white font-black text-sm px-6 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+                    class="material-button material-button-primary bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-700 hover:to-indigo-700 text-white font-black text-sm px-6 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center gap-2 whitespace-nowrap shrink-0">
                     {isPipelineRunning.value ? (
                       <svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24" fill="none">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -648,11 +648,11 @@ export const CreationPageComponent = defineComponent({
                     ) : (
                       <span>🚀</span>
                     )}
-                    <span>{isPipelineRunning.value ? t('runningPipeline') : t('runFullPipeline')}</span>
+                    <span class="whitespace-nowrap">{isPipelineRunning.value ? t('runningPipeline') : t('runFullPipeline')}</span>
                   </button>
                   <button
                     onClick={() => emit('change-template')}
-                    class="text-sm text-primary font-medium hover:underline px-2 py-1">
+                    class="text-sm text-primary font-medium hover:underline px-2 py-1 whitespace-nowrap shrink-0">
                     {currentLanguage.value === 'zh' ? '← 返回模板库' : '← Back to Library'}
                   </button>
                 </div>
@@ -854,7 +854,7 @@ export const CreationPageComponent = defineComponent({
 
                     {/* 场景风格灵感快捷芯片 */}
                     <div class="mt-2.5 p-2 bg-gray-50 rounded-lg border border-gray-200/60 flex flex-wrap items-center gap-1.5">
-                      <span class="text-[11px] font-bold text-gray-500 flex items-center gap-1">
+                      <span class="text-[11px] font-bold text-gray-500 flex items-center gap-1 shrink-0 whitespace-nowrap">
                         <span>{t('sceneChipsTitle')}</span>
                       </span>
                       {PROMPT_SCENE_CHIPS.map((chip) => (
@@ -862,7 +862,7 @@ export const CreationPageComponent = defineComponent({
                           type="button"
                           key={chip.label}
                           onClick={() => appendSceneChip(step, chip.text)}
-                          class="px-2 py-0.5 text-[11px] font-medium rounded-md bg-white text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-300 transition-all border border-gray-200 shadow-2xs">
+                          class="px-2 py-0.5 text-[11px] font-medium rounded-md bg-white text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-300 transition-all border border-gray-200 shadow-2xs whitespace-nowrap shrink-0">
                           {chip.label}
                         </button>
                       ))}
@@ -988,7 +988,7 @@ export const CreationPageComponent = defineComponent({
                     {index === 0 && (
                       <div class="mt-4 p-3.5 bg-indigo-50/70 rounded-xl border border-indigo-100 shadow-2xs">
                         <div class="flex items-center justify-between gap-2 mb-2">
-                          <span class="text-xs font-bold text-indigo-900 flex items-center gap-1">
+                          <span class="text-xs font-bold text-indigo-900 flex items-center gap-1 shrink-0 whitespace-nowrap">
                             <span>{t('demoAssetsTitle')}</span>
                           </span>
                         </div>

@@ -255,18 +255,18 @@ export const LibraryPageComponent = defineComponent({
                     {/* Primary Button: 立即开始创作 (绝不误跳 CSV 页面) */}
                     <button
                       onClick={() => emit('use-template', template, 'edit')}
-                      class="flex-1 py-2.5 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center gap-1.5">
+                      class="flex-1 py-2.5 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center gap-1.5 whitespace-nowrap">
                       <span>🎨</span>
-                      <span>{currentLanguage.value === 'zh' ? '开始制作素材' : 'Create with Template'}</span>
+                      <span class="whitespace-nowrap">{currentLanguage.value === 'zh' ? '开始制作素材' : 'Create with Template'}</span>
                     </button>
 
                     {/* Secondary Button: 批量出图 */}
                     <button
                       onClick={() => emit('use-template', template, 'use')}
-                      class="py-2.5 px-3 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1"
+                      class="py-2.5 px-3 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1 whitespace-nowrap shrink-0"
                       title={currentLanguage.value === 'zh' ? '上传 CSV 表格批量生成上百套广告物料' : 'Batch generation driven by CSV'}>
                       <span>📦</span>
-                      <span>{currentLanguage.value === 'zh' ? '批量出图' : 'Bulk'}</span>
+                      <span class="whitespace-nowrap">{currentLanguage.value === 'zh' ? '批量出图' : 'Bulk'}</span>
                     </button>
                   </div>
                 </div>

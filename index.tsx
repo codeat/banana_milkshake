@@ -378,33 +378,34 @@ const App = {
   template: `
     <header class="bg-surface border-b border-outline sticky top-0 z-20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
+            <div class="flex items-center justify-between h-16 gap-2 lg:gap-4">
                 <!-- Logo and Title -->
-                <div class="flex items-center">
-                    <div class="flex-shrink-0 flex items-baseline space-x-2">
-                         <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-yellow-500 to-orange-500 whitespace-nowrap">🍌 Banana Milkshake</h1>
-                         <span class="text-xs font-bold tracking-wider text-red-600 pb-1">PRO</span>
-                         <span class="text-xs font-bold tracking-wider text-gray-500 pb-1 ml-2">v${process.env.APP_VERSION}</span>
+                <div class="flex items-center shrink-0">
+                    <div class="flex-shrink-0 flex items-baseline space-x-2 whitespace-nowrap">
+                         <h1 class="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-yellow-500 to-orange-500 whitespace-nowrap">🍌 Banana Milkshake</h1>
+                         <span class="text-xs font-bold tracking-wider text-red-600 pb-1 whitespace-nowrap">PRO</span>
+                         <span class="text-xs font-bold tracking-wider text-gray-500 pb-1 ml-1 whitespace-nowrap">v${process.env.APP_VERSION}</span>
                     </div>
                 </div>
 
                 <!-- Desktop Navigation -->
-                <nav class="hidden md:flex items-center space-x-2">
-                    <div @click="switchPage('creation')" class="nav-item" :class="{active: currentPage === 'creation'}">{{ t('creationCenter') }}</div>
-                    <div @click="openResizerPage()" class="nav-item" :class="{active: currentPage === 'resizer'}">{{ t('adResizerNav') }}</div>
-                    <div @click="switchPage('library')" class="nav-item" :class="{active: currentPage === 'library'}">{{ t('templateLibrary') }}</div>
-                    <div @click="switchPage('experiment')" class="nav-item" :class="{active: currentPage === 'experiment'}">{{ t('bulkCreation') }}</div>
+                <nav class="hidden md:flex items-center space-x-1 lg:space-x-2 shrink-0 whitespace-nowrap">
+                    <div @click="switchPage('creation')" class="nav-item whitespace-nowrap" :class="{active: currentPage === 'creation'}">{{ t('creationCenter') }}</div>
+                    <div @click="openResizerPage()" class="nav-item whitespace-nowrap" :class="{active: currentPage === 'resizer'}">{{ t('adResizerNav') }}</div>
+                    <div @click="switchPage('library')" class="nav-item whitespace-nowrap" :class="{active: currentPage === 'library'}">{{ t('templateLibrary') }}</div>
+                    <div @click="switchPage('experiment')" class="nav-item whitespace-nowrap" :class="{active: currentPage === 'experiment'}">{{ t('bulkCreation') }}</div>
                 </nav>
 
                 <!-- Status & Language Toggle (Desktop) -->
-                <div class="hidden md:flex items-center space-x-3" id="auth-container">
-                    <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold shadow-xs">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <span>Vertex AI Global · Nano Banana 2.1 & 3.8</span>
+                <div class="hidden md:flex items-center space-x-2 shrink-0 whitespace-nowrap" id="auth-container">
+                    <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold shadow-xs whitespace-nowrap shrink-0">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                        <span class="whitespace-nowrap hidden xl:inline">Vertex AI Global · Nano Banana 2.1 & 3.8</span>
+                        <span class="whitespace-nowrap inline xl:hidden">Vertex AI · Nano Banana 2.1</span>
                     </div>
-                    <button @click="toggleLanguage" class="material-button material-button-secondary text-xs px-3 py-1.5 flex items-center gap-1 font-medium bg-gray-50 border border-gray-300 hover:bg-gray-100 transition-colors">
+                    <button @click="toggleLanguage" class="material-button material-button-secondary text-xs px-2.5 py-1.5 flex items-center gap-1 font-medium bg-gray-50 border border-gray-300 hover:bg-gray-100 transition-colors whitespace-nowrap shrink-0">
                         <span>🌐</span>
-                        <span>{{ currentLanguage === 'zh' ? 'English' : '简体中文' }}</span>
+                        <span class="whitespace-nowrap">{{ currentLanguage === 'zh' ? 'English' : '简体中文' }}</span>
                     </button>
                 </div>
                 <!-- Mobile Menu Button -->

@@ -294,21 +294,21 @@ export const ResizingPageComponent = defineComponent({
       <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 h-full">
         <div class="flex flex-col space-y-8">
           {/* Settings Section */}
-          <div class="flex justify-between items-center mb-2">
+          <div class="flex flex-wrap justify-between items-center gap-4 mb-2">
             <div>
               <h2 class="text-xl font-bold">{t('resizerTitle')}</h2>
               <p class="text-xs text-gray-500 mt-1">{t('resizerSubtitle')}</p>
             </div>
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-3 shrink-0">
               <button
                 onClick={runAllSelected}
-                class="material-button material-button-primary"
+                class="material-button material-button-primary whitespace-nowrap shrink-0"
                 disabled={!productImagePreview.value}>
                 {t('startResizing')}
               </button>
               <button
                 onClick={() => emit('change-template')}
-                class="text-sm text-primary font-medium hover:underline">
+                class="text-sm text-primary font-medium hover:underline whitespace-nowrap shrink-0">
                 {currentLanguage.value === 'zh' ? '← 返回模板库' : '← Back to Library'}
               </button>
             </div>
@@ -316,10 +316,10 @@ export const ResizingPageComponent = defineComponent({
 
           {/* Step 1: Gemini 生成图片 */}
           <div class="material-card">
-            <div class="step-title">{currentLanguage.value === 'zh' ? '步骤 1: 使用 Gemini 生成基础多模态图像' : 'Step 1: Generate Base Image with Gemini'}</div>
+            <div class="step-title">{t('resizerStep1Title')}</div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div>
-                <label class="block text-sm font-medium text-on-surface-variant mb-1">
+                <label class="block text-sm font-medium text-on-surface-variant mb-1 whitespace-nowrap">
                   {t('model')}
                 </label>
                 <select
@@ -327,7 +327,7 @@ export const ResizingPageComponent = defineComponent({
                   onChange={(e: Event) =>
                     (genaiModel.value = (e.target as HTMLInputElement).value)
                   }
-                  class="material-input bg-white">
+                  class="material-input bg-white text-sm">
                   {supportedModels.map((model) => (
                     <option key={model} value={model}>
                       {getModelDisplayName(model)}
@@ -337,8 +337,8 @@ export const ResizingPageComponent = defineComponent({
               </div>
 
               <div class="md:col-span-2 p-3 bg-indigo-50/70 rounded-xl border border-indigo-100 flex flex-wrap items-center justify-between gap-2">
-                <span class="text-xs font-bold text-indigo-900 flex items-center gap-1">
-                  <span>💡 示例商品一键填入 (无需自己准备图片):</span>
+                <span class="text-xs font-bold text-indigo-900 flex items-center gap-1 shrink-0 whitespace-nowrap">
+                  <span>💡 {currentLanguage.value === 'zh' ? '示例商品一键填入 (无需自己准备图片):' : '1-Click Sample Products (No upload needed):'}</span>
                 </span>
                 <div class="flex flex-wrap items-center gap-1.5">
                   {DEMO_PRODUCTS.map((prod) => (
@@ -346,16 +346,16 @@ export const ResizingPageComponent = defineComponent({
                       type="button"
                       key={prod.id}
                       onClick={() => loadDemoProduct(prod)}
-                      class="px-2.5 py-1 text-xs rounded-lg bg-white border border-indigo-100 text-gray-800 font-semibold hover:border-indigo-500 hover:text-indigo-600 transition-all shadow-2xs flex items-center gap-1">
+                      class="px-2.5 py-1 text-xs rounded-lg bg-white border border-indigo-100 text-gray-800 font-semibold hover:border-indigo-500 hover:text-indigo-600 transition-all shadow-2xs flex items-center gap-1 shrink-0 whitespace-nowrap">
                       <span>{prod.icon}</span>
-                      <span>{currentLanguage.value === 'zh' ? prod.name : prod.nameEn}</span>
+                      <span class="whitespace-nowrap">{currentLanguage.value === 'zh' ? prod.name : prod.nameEn}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-on-surface-variant mb-1">
+                <label class="block text-sm font-medium text-on-surface-variant mb-1 whitespace-nowrap">
                   {currentLanguage.value === 'zh' ? '原版商品主体图 (Asset 1)' : 'Product Image (Asset 1)'}
                 </label>
                 <div class="flex items-center space-x-4">
@@ -384,7 +384,7 @@ export const ResizingPageComponent = defineComponent({
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-on-surface-variant mb-2">
+                <label class="block text-sm font-medium text-on-surface-variant mb-2 whitespace-nowrap">
                   {t('targetSizesLabel')}
                 </label>
                 <div class="grid grid-cols-2 gap-2">
