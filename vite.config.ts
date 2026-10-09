@@ -83,12 +83,12 @@ const viteConfig = defineConfig(({mode}) => {
         env.DEFAULT_TEXT_MODEL || 'gemini-3.8-flash',
       ),
       'process.env.DEFAULT_IMAGE_MODEL': JSON.stringify(
-        env.DEFAULT_IMAGE_MODEL || 'gemini-3.1-flash-image',
+        env.DEFAULT_IMAGE_MODEL || 'gemini-nano-banana-2.1',
       ),
       'process.env.SUPPORTED_IMAGE_MODEL': [
+        'gemini-nano-banana-2.1',
         'gemini-3.1-flash-image',
         'gemini-3-pro-image',
-        'gemini-nano-banana-2.1',
         'gemini-3.1-flash-lite-image',
         'gemini-2.5-flash-image',
       ],

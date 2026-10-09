@@ -95,6 +95,21 @@ export const messages = {
     startResizing: '启动全尺寸矩阵重构',
     resizingProgress: '多尺寸渲染进度',
     downloadZip: '一键打包下载全部物料 (ZIP)',
+    resizerStep1Title: '步骤 1: 使用 Gemini 生成基础多模态图像',
+    resizerStep2Title: '步骤 2: 代码级无损智能自适应裁剪 (Auto-Crop)',
+    resizerStep2Subtitle: '系统将根据步骤 1 生成的图像，严格对齐所选广告版位像素规格进行高精裁切与画面保护。',
+    targetSizesLabel: '目标投放规格 (可多选)',
+    resizerPromptLabel: '外绘重构指导提示词 (Prompt)',
+    generatedImageLabel: 'AI 生成延展底图',
+    croppedImageLabel: '精确裁切成片',
+    placeholderLabel: '官方广告版位规格占位',
+    btnRetry: '重新生成',
+    btnRun: '生成此规格',
+    btnGenerating: '正在外绘生成...',
+    btnRetrying: '正在重试...',
+    notStarted: '未生成',
+    downloadAllCropped: '一键下载全部裁切规格物料 (ZIP)',
+    clickToUploadProduct: '点击上传商品原图 (Asset 1)',
 
     // Bulk Creation
     bulkTitle: '批量广告创意生成与实验中心',
@@ -183,6 +198,21 @@ export const messages = {
     startResizing: 'Generate All Sizes',
     resizingProgress: 'Multi-ratio Rendering Progress',
     downloadZip: 'Download All Assets (ZIP)',
+    resizerStep1Title: 'Step 1: Generate Base Image with Gemini',
+    resizerStep2Title: 'Step 2: Precisely Auto-Crop to Target Pixels',
+    resizerStep2Subtitle: 'System will automatically crop and fit the generated image perfectly to your selected sizes in Step 1.',
+    targetSizesLabel: 'Target Sizes (Multi-select)',
+    resizerPromptLabel: 'Prompt',
+    generatedImageLabel: 'Generated Base Image',
+    croppedImageLabel: 'Cropped Image',
+    placeholderLabel: 'Standard Ad Layout Placeholder',
+    btnRetry: 'Retry',
+    btnRun: 'Run',
+    btnGenerating: 'Generating...',
+    btnRetrying: 'Retrying...',
+    notStarted: 'Not started',
+    downloadAllCropped: 'Download All Cropped Images (ZIP)',
+    clickToUploadProduct: 'Click to upload Product Image (Asset 1)',
 
     // Bulk Creation
     bulkTitle: 'Bulk Creation & Experimentation Center',
@@ -210,16 +240,16 @@ export function t(key: keyof typeof messages['zh']): string {
 export function getModelDisplayName(model: string): string {
   const lang = currentLanguage.value;
   const mapZh: Record<string, string> = {
-    'gemini-3.1-flash-image': 'gemini-3.1-flash-image (推荐 · 极速高清生图)',
+    'gemini-nano-banana-2.1': 'gemini-nano-banana-2.1 (默认首选 · 新一代旗舰)',
+    'gemini-3.1-flash-image': 'gemini-3.1-flash-image (极速高清生图)',
     'gemini-3-pro-image': 'gemini-3-pro-image (旗舰 · 影视级高精画质)',
-    'gemini-nano-banana-2.1': 'gemini-nano-banana-2.1 (新一代 · 创意特效)',
     'gemini-3.1-flash-lite-image': 'gemini-3.1-flash-lite-image (轻量 · 极速出图)',
     'gemini-2.5-flash-image': 'gemini-2.5-flash-image (兼容基准 · 经典模型)',
   };
   const mapEn: Record<string, string> = {
-    'gemini-3.1-flash-image': 'gemini-3.1-flash-image (Recommended · Ultra Fast & HD)',
+    'gemini-nano-banana-2.1': 'gemini-nano-banana-2.1 (Default · Next-Gen Flagship)',
+    'gemini-3.1-flash-image': 'gemini-3.1-flash-image (Ultra Fast & HD)',
     'gemini-3-pro-image': 'gemini-3-pro-image (Flagship · Studio Quality)',
-    'gemini-nano-banana-2.1': 'gemini-nano-banana-2.1 (Next-Gen · Creative Effects)',
     'gemini-3.1-flash-lite-image': 'gemini-3.1-flash-lite-image (Lightweight · Low Latency)',
     'gemini-2.5-flash-image': 'gemini-2.5-flash-image (Legacy Baseline)',
   };

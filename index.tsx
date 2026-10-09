@@ -400,7 +400,7 @@ const App = {
                 <div class="hidden md:flex items-center space-x-3" id="auth-container">
                     <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold shadow-xs">
                         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <span>Vertex AI Global · Gemini 3.1 & 3.8</span>
+                        <span>Vertex AI Global · Nano Banana 2.1 & 3.8</span>
                     </div>
                     <button @click="toggleLanguage" class="material-button material-button-secondary text-xs px-3 py-1.5 flex items-center gap-1 font-medium bg-gray-50 border border-gray-300 hover:bg-gray-100 transition-colors">
                         <span>🌐</span>
@@ -433,7 +433,7 @@ const App = {
                 <div class="px-2 py-2 space-y-2">
                      <div class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
                          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                         <span>Vertex AI Global · Gemini 3.1 & 3.8</span>
+                         <span>Vertex AI Global · Nano Banana 2.1 & 3.8</span>
                      </div>
                      <button @click="toggleLanguage" class="material-button material-button-secondary w-full text-xs py-2 flex items-center justify-center gap-1">
                          <span>🌐</span>

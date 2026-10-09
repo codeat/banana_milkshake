@@ -41,7 +41,7 @@ export const ResizingPageComponent = defineComponent({
   },
   emits: ['change-template', 'open-preview'],
   setup(props, {emit}) {
-    const genaiModel = ref('gemini-3.1-flash-image');
+    const genaiModel = ref(DEFAULT_IMAGE_MODEL);
     const supportedModels = SUPPORTED_IMAGE_MODELS;
 
     const sizes = ['970x250', '300x600', '300x250', '336x280'];
@@ -78,7 +78,15 @@ export const ResizingPageComponent = defineComponent({
       productImage.value = null;
     };
 
-    const defaultPrompt =
+    const defaultPromptZh =
+      `智能自适应并重构 Asset 1 中的商品视觉，使其完美适配 Asset 2（版位占位图）所建议的画幅比例与排版布局。最终生成的图像必须是符合指定广告规格的高品质商业物料。
+
+**核心构图规则：**
+* **商品主体居中：** 保持核心商品居中、清晰锐利、自然融合，完好保留原图材质与细节质感。
+* **背景自然延伸：** 确保背景自然无缝延伸并填满全新画幅尺寸，光影一致。
+* **严禁额外元素：** 除原图已有的原生元素外，严禁添加任何额外文字覆盖、水印、Logo 或多余几何图元。`;
+
+    const defaultPromptEn =
       `Intelligently adapt and resize the product from Asset 1 to perfectly fit the dimensions and layout suggested by Asset 2 (the placeholder). The final image must be a professional advertisement of the specified size.
 
 **Key Layout Rules:**
@@ -88,7 +96,17 @@ export const ResizingPageComponent = defineComponent({
 
 **Strict Restrictions:**
 * **No New Additions:** Apart from the native elements already present in Asset 1, do not add any new text overlays, logos, watermarks, or extra graphic elements.`;
-    const prompt = ref(defaultPrompt);
+
+    const prompt = ref(
+      currentLanguage.value === 'zh' ? defaultPromptZh : defaultPromptEn,
+    );
+
+    watch(
+      () => currentLanguage.value,
+      (newLang) => {
+        prompt.value = newLang === 'zh' ? defaultPromptZh : defaultPromptEn;
+      },
+    );
 
     const results = reactive<
       Record<
@@ -367,7 +385,7 @@ export const ResizingPageComponent = defineComponent({
 
               <div>
                 <label class="block text-sm font-medium text-on-surface-variant mb-2">
-                  Target Sizes (Multi-select)
+                  {t('targetSizesLabel')}
                 </label>
                 <div class="grid grid-cols-2 gap-2">
                   {sizes.map((size) => (
@@ -386,7 +404,7 @@ export const ResizingPageComponent = defineComponent({
 
             <div class="mt-6">
               <label class="block text-sm font-medium text-on-surface-variant mb-1">
-                Prompt
+                {t('resizerPromptLabel')}
               </label>
               <textarea
                 v-model={prompt.value}
@@ -397,9 +415,9 @@ export const ResizingPageComponent = defineComponent({
 
           {/* Step 2: 代码精确裁剪 */}
           <div class="material-card">
-            <div class="step-title">Step 2: Precisely Auto-Crop to Target Pixels</div>
+            <div class="step-title">{t('resizerStep2Title')}</div>
             <div class="text-sm text-gray-500">
-              System will automatically crop and fit the generated image perfectly to your selected sizes in Step 1.
+              {t('resizerStep2Subtitle')}
             </div>
           </div>
 
@@ -420,8 +438,8 @@ export const ResizingPageComponent = defineComponent({
                         class="text-xs font-medium text-primary hover:underline disabled:text-gray-400 disabled:no-underline cursor-pointer disabled:cursor-not-allowed"
                       >
                         {result.isLoading
-                          ? (result.hasRun ? 'Retrying...' : 'Generating...')
-                          : (result.hasRun ? 'Retry' : 'Run')}
+                          ? (result.hasRun ? t('btnRetrying') : t('btnGenerating'))
+                          : (result.hasRun ? t('btnRetry') : t('btnRun'))}
                       </button>
                     </div>
                     {result.isLoading ? (
@@ -444,7 +462,7 @@ export const ResizingPageComponent = defineComponent({
                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                         <p class="mt-2 text-sm text-on-surface-variant">
-                          Generating...
+                          {t('btnGenerating')}
                         </p>
                       </div>
                     ) : result.error ? (
@@ -456,7 +474,7 @@ export const ResizingPageComponent = defineComponent({
                         {/* Step 1: Gemini Generated */}
                         <div>
                           <div class="text-xs font-medium text-gray-500 mb-1">
-                            Generated Image ({result.geminiDimensions || getEstimatedDimensions(size)})
+                            {t('generatedImageLabel')} ({result.geminiDimensions || getEstimatedDimensions(size)})
                           </div>
                           <div class="aspect-square bg-gray-100 rounded-md flex items-center justify-center overflow-hidden relative">
                             {result.geminiImageUrl ? (
@@ -467,14 +485,14 @@ export const ResizingPageComponent = defineComponent({
                                 onClick={() => emit('open-preview', result.geminiImageUrl)}
                               />
                             ) : (
-                              <div class="text-xs text-gray-400">Not started</div>
+                              <div class="text-xs text-gray-400">{t('notStarted')}</div>
                             )}
                           </div>
                         </div>
 
                         {/* Step 2: Cropped */}
                         <div>
-                          <div class="text-xs font-medium text-gray-500 mb-1">Cropped Image</div>
+                          <div class="text-xs font-medium text-gray-500 mb-1">{t('croppedImageLabel')}</div>
                           <div class="aspect-square bg-gray-100 rounded-md flex items-center justify-center overflow-hidden relative">
                             {result.croppedImageUrl ? (
                               <img
@@ -484,7 +502,7 @@ export const ResizingPageComponent = defineComponent({
                                 onClick={() => emit('open-preview', result.croppedImageUrl)}
                               />
                             ) : (
-                              <div class="text-xs text-gray-400">Not started</div>
+                              <div class="text-xs text-gray-400">{t('notStarted')}</div>
                             )}
                           </div>
                         </div>
@@ -492,7 +510,7 @@ export const ResizingPageComponent = defineComponent({
                     )}
                   </div>
                   <div class="mt-4 text-center">
-                    <div class="text-xs font-medium text-gray-500 mb-1">Placeholder</div>
+                    <div class="text-xs font-medium text-gray-500 mb-1">{t('placeholderLabel')}</div>
                     <img
                       src={PLACEHOLDERS[size]}
                       class="h-8 mx-auto mt-1 opacity-50 cursor-pointer"
@@ -512,7 +530,7 @@ export const ResizingPageComponent = defineComponent({
               class="material-button material-button-primary"
               disabled={!hasCroppedImages.value}
             >
-              Download All Cropped Images
+              {t('downloadAllCropped')}
             </button>
           </div>
         </div>
