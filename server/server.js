@@ -248,6 +248,11 @@ const MAX_LOGS = 100;
 const serverLogs = [];
 
 function recordLog(entry) {
+  const existingIdx = serverLogs.findIndex((item) => item.id === entry.id);
+  if (existingIdx !== -1) {
+    serverLogs[existingIdx] = { ...serverLogs[existingIdx], ...entry };
+    return;
+  }
   serverLogs.push(entry);
   if (serverLogs.length > MAX_LOGS) {
     serverLogs.shift();
@@ -259,6 +264,7 @@ app.post('/generate-content', async (req, res) => {
   const startTime = Date.now();
   const model = req.body?.model || process.env.DEFAULT_IMAGE_MODEL || 'gemini-nano-banana-2.1';
   const stepTag = req.body?.stepTag || '';
+  const displayModel = stepTag ? `${model} [${stepTag}]` : model;
 
   // Remove custom metadata field before passing to GoogleGenAI SDK
   const sdkPayload = { ...req.body };
@@ -281,6 +287,20 @@ app.post('/generate-content', async (req, res) => {
     }
   }
   promptSnippet = promptSnippet.trim();
+
+  // Immediately record in-flight (102 RUNNING) log entry so live auto-refresh shows active requests
+  recordLog({
+    id: reqId,
+    timestamp: new Date(startTime).toISOString(),
+    _startTime: startTime,
+    status: 102,
+    model: displayModel,
+    durationMs: 0,
+    imagesCount,
+    outputSizeBytes: 0,
+    prompt: promptSnippet,
+    error: null,
+  });
 
   const callVertexWithFallback = async () => {
     const normalizedModel = model.replace(/^models\//, '');
@@ -319,7 +339,7 @@ app.post('/generate-content', async (req, res) => {
       id: reqId,
       timestamp: new Date().toISOString(),
       status: 200,
-      model: stepTag ? `${model} [${stepTag}]` : model,
+      model: displayModel,
       durationMs,
       imagesCount,
       outputSizeBytes,
@@ -339,7 +359,7 @@ app.post('/generate-content', async (req, res) => {
       id: reqId,
       timestamp: new Date().toISOString(),
       status: errorStatus,
-      model: stepTag ? `${model} [${stepTag}]` : model,
+      model: displayModel,
       durationMs,
       imagesCount,
       outputSizeBytes: 0,
@@ -388,6 +408,20 @@ app.post('/api/client-log', (req, res) => {
 
 // Logs & Diagnostics API
 app.get('/api/logs', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  const now = Date.now();
+  const hydratedLogs = serverLogs
+    .slice()
+    .reverse()
+    .map((item) => {
+      if (item.status === 102 && item._startTime) {
+        return {
+          ...item,
+          durationMs: now - item._startTime,
+        };
+      }
+      return item;
+    });
   res.json({
     service: 'banana-milkshake',
     version: 'v2026.10.9',
@@ -399,8 +433,8 @@ app.get('/api/logs', (req, res) => {
       cloudRunRevision: process.env.K_REVISION || 'local-dev',
       uptimeSeconds: Math.floor(process.uptime()),
     },
-    total: serverLogs.length,
-    logs: serverLogs.slice().reverse()
+    total: hydratedLogs.length,
+    logs: hydratedLogs
   });
 });
 

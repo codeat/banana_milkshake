@@ -34,6 +34,12 @@ export const ai = new GoogleGenAI({
  * @param payload The object to send as the request body.
  * @return The JSON response from the server.
  */
+function notifyLogsUpdated() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('banana-logs-updated'));
+  }
+}
+
 export async function reportClientLog(entry: {
   status?: number;
   model?: string;
@@ -49,19 +55,33 @@ export async function reportClientLog(entry: {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(entry),
     });
+    notifyLogsUpdated();
   } catch (_) {
     // Non-blocking telemetry
   }
 }
 
 export async function callGenAIApi(payload: object) {
-  const response = await fetch('/generate-content', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
+  // Notify diagnostics drawer shortly after request starts so 102 RUNNING state appears immediately
+  const inflightTimer = setTimeout(() => notifyLogsUpdated(), 200);
+
+  let response: Response;
+  try {
+    response = await fetch('/generate-content', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (networkErr) {
+    clearTimeout(inflightTimer);
+    notifyLogsUpdated();
+    throw networkErr;
+  }
+
+  clearTimeout(inflightTimer);
+  notifyLogsUpdated();
 
   if (!response.ok) {
     let errText = `HTTP error! status: ${response.status}`;

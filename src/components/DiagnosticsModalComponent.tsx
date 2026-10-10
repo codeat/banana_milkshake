@@ -5,8 +5,7 @@
  * Real-time monitoring of Vertex AI API requests, latency, prompt payloads, and error telemetry.
  */
 
-import { defineComponent, ref, onMounted, computed, PropType } from 'vue';
-import { currentLanguage, t } from '../i18n';
+import { defineComponent, ref, onMounted, onUnmounted, watch, computed } from 'vue';
 
 export interface LogEntry {
   id: string;
@@ -39,30 +38,83 @@ export const DiagnosticsModalComponent = defineComponent({
     const logs = ref<LogEntry[]>([]);
     const env = ref<EnvironmentInfo | null>(null);
     const isLoading = ref(false);
+    const autoRefresh = ref(true);
+    const lastSyncedAt = ref<string>('--:--:--');
     const filter = ref<'all' | 'success' | 'error'>('all');
     const copiedText = ref(false);
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
 
-    const fetchLogs = async () => {
-      isLoading.value = true;
+    const fetchLogs = async (silent = false) => {
+      if (!silent) {
+        isLoading.value = true;
+      }
       try {
-        const resp = await fetch('/api/logs');
+        const resp = await fetch(`/api/logs?t=${Date.now()}`, {
+          cache: 'no-store',
+        });
         if (resp.ok) {
           const data = await resp.json();
           logs.value = data.logs || [];
           env.value = data.environment || null;
+          lastSyncedAt.value = new Date().toLocaleTimeString();
         }
       } catch (e) {
         console.error('Failed to load server diagnostics logs:', e);
       } finally {
-        isLoading.value = false;
+        if (!silent) {
+          isLoading.value = false;
+        }
       }
     };
+
+    const startPolling = () => {
+      stopPolling();
+      if (props.isOpen && autoRefresh.value) {
+        pollTimer = setInterval(() => {
+          fetchLogs(true);
+        }, 1500);
+      }
+    };
+
+    const stopPolling = () => {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    };
+
+    const handleGlobalLogEvent = () => {
+      fetchLogs(true);
+    };
+
+    watch(
+      () => props.isOpen,
+      (open) => {
+        if (open) {
+          fetchLogs(false);
+          startPolling();
+        } else {
+          stopPolling();
+        }
+      },
+      { immediate: true },
+    );
+
+    watch(autoRefresh, (enabled) => {
+      if (enabled && props.isOpen) {
+        fetchLogs(true);
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    });
 
     const clearLogs = async () => {
       if (!confirm('确定清空当前诊断流水日志吗？')) return;
       try {
         await fetch('/api/logs', { method: 'DELETE' });
         logs.value = [];
+        lastSyncedAt.value = new Date().toLocaleTimeString();
       } catch (e) {
         console.error(e);
       }
@@ -76,27 +128,41 @@ export const DiagnosticsModalComponent = defineComponent({
     };
 
     const filteredLogs = computed(() => {
-      if (filter.value === 'success') return logs.value.filter((l) => l.status === 200);
-      if (filter.value === 'error') return logs.value.filter((l) => l.status !== 200);
+      if (filter.value === 'success')
+        return logs.value.filter((l) => l.status === 200 || l.status === 102);
+      if (filter.value === 'error')
+        return logs.value.filter((l) => l.status !== 200 && l.status !== 102);
       return logs.value;
     });
 
+    const completedLogs = computed(() =>
+      logs.value.filter((l) => l.status !== 102),
+    );
+
+    const runningCount = computed(
+      () => logs.value.filter((l) => l.status === 102).length,
+    );
+
     const avgLatency = computed(() => {
-      if (logs.value.length === 0) return '0.0s';
-      const sum = logs.value.reduce((acc, l) => acc + (l.durationMs || 0), 0);
-      return (sum / logs.value.length / 1000).toFixed(1) + 's';
+      if (completedLogs.value.length === 0) return '0.0s';
+      const sum = completedLogs.value.reduce((acc, l) => acc + (l.durationMs || 0), 0);
+      return (sum / completedLogs.value.length / 1000).toFixed(1) + 's';
     });
 
     const successRate = computed(() => {
-      if (logs.value.length === 0) return '100%';
-      const ok = logs.value.filter((l) => l.status === 200).length;
-      return Math.round((ok / logs.value.length) * 100) + '%';
+      if (completedLogs.value.length === 0) return '100%';
+      const ok = completedLogs.value.filter((l) => l.status === 200).length;
+      return Math.round((ok / completedLogs.value.length) * 100) + '%';
     });
 
     onMounted(() => {
-      if (props.isOpen) {
-        fetchLogs();
-      }
+      window.addEventListener('banana-logs-updated', handleGlobalLogEvent);
+      fetchLogs(true);
+    });
+
+    onUnmounted(() => {
+      stopPolling();
+      window.removeEventListener('banana-logs-updated', handleGlobalLogEvent);
     });
 
     return () => {
@@ -120,11 +186,19 @@ export const DiagnosticsModalComponent = defineComponent({
                 <div>
                   <h3 class="font-bold text-base flex items-center gap-2">
                     <span>系统运行日志与诊断中心</span>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-bold">
-                      ACTIVE
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-bold flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                      <span>LIVE AUTO-SYNC</span>
                     </span>
+                    {runningCount.value > 0 && (
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-400/40 font-bold animate-pulse">
+                        ⏳ {runningCount.value} 个任务生成中
+                      </span>
+                    )}
                   </h3>
-                  <p class="text-xs text-gray-400">Vertex AI API 请求链路、响应耗时与报错排查</p>
+                  <p class="text-xs text-gray-400">
+                    Vertex AI API 实时请求链路、响应耗时与报错排查 · 最后同步: {lastSyncedAt.value}
+                  </p>
                 </div>
               </div>
               <button
@@ -175,48 +249,62 @@ export const DiagnosticsModalComponent = defineComponent({
             </div>
 
             {/* Filter and Actions Bar */}
-            <div class="px-6 py-3 border-b border-gray-200 flex items-center justify-between gap-3 bg-white">
+            <div class="px-6 py-3 border-b border-gray-200 flex items-center justify-between gap-2 bg-white flex-wrap">
               <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-lg text-xs font-medium">
                 <button
                   onClick={() => (filter.value = 'all')}
-                  class={`px-2.5 py-1 rounded-md transition-all ${
+                  class={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
                     filter.value === 'all' ? 'bg-white font-bold text-gray-900 shadow-xs' : 'text-gray-600'
                   }`}>
                   全部 ({logs.value.length})
                 </button>
                 <button
                   onClick={() => (filter.value = 'success')}
-                  class={`px-2.5 py-1 rounded-md transition-all ${
+                  class={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
                     filter.value === 'success' ? 'bg-white font-bold text-emerald-700 shadow-xs' : 'text-gray-600'
                   }`}>
                   成功 ({logs.value.filter((l) => l.status === 200).length})
                 </button>
                 <button
                   onClick={() => (filter.value = 'error')}
-                  class={`px-2.5 py-1 rounded-md transition-all ${
+                  class={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
                     filter.value === 'error' ? 'bg-white font-bold text-red-700 shadow-xs' : 'text-gray-600'
                   }`}>
-                  失败 ({logs.value.filter((l) => l.status !== 200).length})
+                  失败 ({logs.value.filter((l) => l.status !== 200 && l.status !== 102).length})
                 </button>
               </div>
 
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-1.5">
                 <button
-                  onClick={fetchLogs}
+                  onClick={() => (autoRefresh.value = !autoRefresh.value)}
+                  class={`px-2.5 py-1 text-xs font-semibold rounded-lg flex items-center gap-1 border transition-colors cursor-pointer ${
+                    autoRefresh.value
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+                      : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200'
+                  }`}
+                  title="每 1.5 秒及每次 API 请求触发时自动同步最新日志">
+                  <span
+                    class={`w-2 h-2 rounded-full ${
+                      autoRefresh.value ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'
+                    }`}></span>
+                  <span>{autoRefresh.value ? '自动刷新: 开启' : '自动刷新: 暂停'}</span>
+                </button>
+                <button
+                  onClick={() => fetchLogs(false)}
                   disabled={isLoading.value}
-                  class="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg flex items-center gap-1 transition-colors">
+                  class="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg flex items-center gap-1 transition-colors cursor-pointer">
                   <span>🔄</span>
-                  <span>{isLoading.value ? '刷新中...' : '刷新'}</span>
+                  <span>{isLoading.value ? '刷新中...' : '立即刷新'}</span>
                 </button>
                 <button
                   onClick={copyAllLogs}
-                  class="px-2.5 py-1 bg-gray-900 hover:bg-gray-800 text-white text-xs font-bold rounded-lg flex items-center gap-1 transition-colors">
+                  class="px-2.5 py-1 bg-gray-900 hover:bg-gray-800 text-white text-xs font-bold rounded-lg flex items-center gap-1 transition-colors cursor-pointer">
                   <span>📋</span>
-                  <span>{copiedText.value ? '已复制！' : '复制诊断 JSON'}</span>
+                  <span>{copiedText.value ? '已复制！' : '复制 JSON'}</span>
                 </button>
                 <button
                   onClick={clearLogs}
-                  class="px-2 py-1 text-gray-400 hover:text-red-600 hover:bg-red-50 text-xs rounded-lg transition-colors"
+                  class="px-2 py-1 text-gray-400 hover:text-red-600 hover:bg-red-50 text-xs rounded-lg transition-colors cursor-pointer"
                   title="清空流水">
                   <span>🗑️</span>
                 </button>
@@ -229,26 +317,40 @@ export const DiagnosticsModalComponent = defineComponent({
                 <div class="text-center py-20 text-gray-400">
                   <div class="text-3xl mb-2">📜</div>
                   <div class="text-sm font-semibold text-gray-600">暂无请求日志</div>
-                  <p class="text-xs text-gray-400 mt-1">当在画布中点击生成或执行尺寸重构时，调用流水将在此实时呈现</p>
+                  <p class="text-xs text-gray-400 mt-1">当在画布中点击生成或执行尺寸重构时，调用流水将在此自动实时刷出</p>
                 </div>
               ) : (
                 filteredLogs.value.map((entry) => (
                   <div
                     key={entry.id}
-                    class="bg-white rounded-xl border border-gray-200 p-4 shadow-2xs hover:border-indigo-300 transition-all space-y-2">
+                    class={`bg-white rounded-xl border p-4 shadow-2xs transition-all space-y-2 ${
+                      entry.status === 102
+                        ? 'border-indigo-400 ring-2 ring-indigo-500/15 bg-indigo-50/10'
+                        : 'border-gray-200 hover:border-indigo-300'
+                    }`}>
                     <div class="flex items-center justify-between text-xs">
                       <div class="flex items-center gap-2">
                         <span
                           class={`px-2 py-0.5 rounded-full font-bold font-mono text-[11px] ${
                             entry.status === 200
                               ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-red-100 text-red-800'
+                              : entry.status === 102
+                                ? 'bg-indigo-100 text-indigo-800 animate-pulse'
+                                : 'bg-red-100 text-red-800'
                           }`}>
-                          {entry.status === 200 ? '200 OK' : `${entry.status} ERROR`}
+                          {entry.status === 200
+                            ? '200 OK'
+                            : entry.status === 102
+                              ? '⏳ 102 RUNNING'
+                              : `${entry.status} ERROR`}
                         </span>
                         <span class="font-mono text-gray-600 font-semibold">{entry.model}</span>
                         <span class="text-gray-400">|</span>
-                        <span class="text-gray-500 font-mono">{(entry.durationMs / 1000).toFixed(2)}s</span>
+                        <span class="text-gray-500 font-mono">
+                          {entry.status === 102
+                            ? `已耗时 ${(entry.durationMs / 1000).toFixed(1)}s...`
+                            : `${(entry.durationMs / 1000).toFixed(2)}s`}
+                        </span>
                       </div>
                       <span class="text-[11px] text-gray-400 font-mono">
                         {new Date(entry.timestamp).toLocaleTimeString()}
@@ -256,14 +358,19 @@ export const DiagnosticsModalComponent = defineComponent({
                     </div>
 
                     {/* Prompt Snippet */}
-                    <div class="bg-gray-50 rounded-lg p-2.5 border border-gray-100 text-xs text-gray-800 font-mono break-words leading-relaxed">
+                    <div class="bg-gray-50 rounded-lg p-2.5 border border-gray-100 text-xs text-gray-800 font-mono break-words leading-relaxed max-h-32 overflow-y-auto">
                       <div class="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Prompt Payload</div>
                       {entry.prompt || '<No Text Prompt>'}
                     </div>
 
                     {/* Metadata & Errors */}
                     <div class="flex items-center justify-between text-[11px] text-gray-500 pt-1">
-                      <span>输入资产: {entry.imagesCount} 张 | 产出大小: {Math.round(entry.outputSizeBytes / 1024)} KB</span>
+                      <span>
+                        输入资产: {entry.imagesCount} 张 |{' '}
+                        {entry.status === 102
+                          ? '正在请求 Vertex AI 生成高清图像...'
+                          : `产出大小: ${Math.round(entry.outputSizeBytes / 1024)} KB`}
+                      </span>
                       {entry.error && (
                         <span class="text-red-600 font-semibold truncate max-w-xs">{entry.error}</span>
                       )}
@@ -278,7 +385,7 @@ export const DiagnosticsModalComponent = defineComponent({
               <span>GCP 项目: <code class="font-mono text-gray-800">{env.value?.gcpProject || 'panliuyang-ramp-up-project-01'}</code></span>
               <button
                 onClick={() => emit('close')}
-                class="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-lg transition-colors">
+                class="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-lg transition-colors cursor-pointer">
                 关闭
               </button>
             </div>
