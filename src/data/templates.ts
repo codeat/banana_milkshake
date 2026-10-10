@@ -39,14 +39,17 @@ export const TEMPLATES: Template[] = [
         name: 'Step 1: Generate Street Snap',
         text_prompt: `Generate a high-resolution editorial fashion photograph.
 Extract the primary product from asset1.
-Product Handling & Model Integration:
-- If asset1 is clothing or apparel (e.g. coats, jackets, shirts, pants, dresses): The model wears the garment naturally to showcase its silhouette, drape, and texture.
-- If asset1 is footwear: The model wears the shoes on their feet while walking.
-- If asset1 is a fragrance, perfume bottle, cosmetic, beverage cup, or handheld item: The model holds or showcases the product gracefully in their hand (CRITICAL: NEVER wear bottles, cosmetics, or non-clothing items around the neck as pendants or necklaces!).
-Background Scene: A dynamic realistic urban street, a modern city intersection or a concrete-and-glass commercial area. The scene should be slightly blurred or out of focus to keep the product sharp and prominent. MUST: Expand the generated background to fill the entire landscape frame. DO NOT reuse the model pose or exact background from the input asset1.
-Model Pose: The model is captured mid-stride or paused naturally in the city scene with a confident effortless commercial pose.
+Product Handling, Real-World Physical Scale & Model Integration:
+- STRICT REAL-WORLD SCALE (CRITICAL): Every product MUST strictly obey authentic real-world physical dimensions relative to human anatomy (hand, fingers, wrist, face, torso). NEVER artificially enlarge, inflate, or oversize any product relative to the model.
+- If asset1 is clothing or apparel (e.g. coats, jackets, shirts, pants, dresses): The model wears the garment naturally in a three-quarter or full-body street framing to showcase its silhouette, drape, and texture.
+- If asset1 is footwear: The model wears the shoes naturally on their feet while walking.
+- If asset1 is a handbag or leather goods: The model carries the bag naturally in hand or over the shoulder at authentic real-world leather-goods proportions.
+- If asset1 is eyewear or wristwatch: The model wears the sunglasses naturally on their face or the watch naturally on their wrist, framed in a crisp medium close-up portrait so details are sharp at 1:1 real-world scale.
+- If asset1 is a small handheld item (e.g. fragrance/perfume bottle, skincare serum dropper, lipstick, scented candle, beverage cup, headphones): A real 50ml–100ml perfume bottle, serum bottle, or cosmetic is only 8–12 cm tall and MUST fit delicately inside a single human palm or between the model's fingers (NEVER make a perfume bottle or cosmetic larger than the human hand, NEVER cradle it like a giant magnum bottle, and NEVER wear bottles/cosmetics around the neck as pendants). To showcase the small product's label and design details clearly, use a closer MEDIUM CLOSE-UP PORTRAIT framing (chest-up, 85mm f/1.8 lens) with the model holding the palm-sized product naturally in the foreground plane.
+Background Scene: A dynamic realistic urban street, a modern city intersection or a concrete-and-glass commercial area with creamy bokeh depth of field. MUST: Expand the generated background to fill the entire landscape frame. DO NOT reuse the model pose or exact background from the input asset1.
+Model Pose: The model is captured naturally in the city scene with a confident, effortless luxury commercial pose appropriate to the product's real-world scale.
 Facial Expression: A neutral-to-serious powerful expression, a confident direct gaze at the camera or a strong profile.
-Art Style: Clean crisp editorial street photography. Use bright even professional lighting to eliminate harsh shadows and make the product's color and features pop against the urban backdrop. Composition is minimalist well-framed and emphasizes the product's design detail.
+Art Style: Clean crisp editorial street photography. Use bright even professional lighting to eliminate harsh shadows and make the product's color and features pop against the urban backdrop. Composition is minimalist, well-framed, and leaves clean negative space in the top-right corner for brand signature placement.
 `,
         image_slots: [{asset_name: 'asset1', is_static: false}],
         text_variables: [],
@@ -55,8 +58,8 @@ Art Style: Clean crisp editorial street photography. Use bright even professiona
         name: 'Step 2: Add Your Logo',
         text_prompt: `Place the provided "Brand Logo" (asset2) onto the final image (asset1).
 1. If the final image already has a logo, replace it with the new one in the exact same position.
-2. If the template does not have a logo, place the new logo in a clean, professional corner (e.g., top-right).
-3. Ensure the logo is clearly visible with crisp contrast, preserving the logo's badge, emblem shape, and brand typography. It must not overlap the product or human faces.
+2. If the template does not have a logo, place the new logo cleanly in the top-right corner with balanced margins from the top and right edges.
+3. Ensure the logo is clearly visible with crisp contrast, preserving the logo's exact emblem shape, transparent background, and brand typography with NO rectangular background box. It must never overlap the product or the model's head/face.
 `,
         image_slots: [{asset_name: 'asset2', is_static: false}],
         text_variables: [],
@@ -77,28 +80,30 @@ Art Style: Clean crisp editorial street photography. Use bright even professiona
         name: 'Step 1: Add model for the product',
         text_prompt: `Generate a high-resolution, editorial fashion photograph based on the provided product image (asset1).
 Core Product & Model:
-1. Extract the primary apparel product(s) from asset1.
-2. Determine the product category (Men's Wear, Women's Wear, or Costume) and the intended gender.
-3. Select a diverse, fashion-forward model of the appropriate gender to wear the product(s) properly. If the product is a pair of wears (e.g., a couple's outfit), include two models of the specified genders.
-4. Enhance the product's appearance to look like high-quality, real-world materials with realistic textures and stitching.
+1. Extract the primary product(s) from asset1.
+2. Determine the product category (Apparel, Footwear, Eyewear/Watch/Bag, or Handheld Beauty/Fragrance) and the intended gender.
+3. Select a diverse, fashion-forward model of the appropriate gender to wear or hold the product(s) properly.
+4. STRICT REAL-WORLD PHYSICAL SCALE: Maintain 100% authentic real-world physical dimensions relative to human anatomy. If asset1 is a small handheld item (perfume bottle, serum, lipstick, candle), it must remain strictly palm-sized (8–12 cm tall, fitting delicately in one hand — NEVER oversized or giant) and be photographed in a closer chest-up medium close-up portrait.
+5. Enhance the product's appearance to look like high-quality, real-world materials with realistic textures.
 
 Staging & Background:
-5.  Background Scene:
+6.  Background Scene:
 * If the product is a Costume: Use a clean, brightly lit white room with a few subtle, modern decorations.
-* Otherwise (Men's/Women's Wear): Use a realistic, simple, minimalist scene (e.g., a studio set, a concrete wall, or a clean urban backdrop).
-6.  MUST: Expand the generated background to fill the entire landscape frame.
-7.  DO NOT reuse the model, pose, or exact background from the input asset1.
+* Otherwise: Use a realistic, simple, minimalist scene (e.g., a studio set, a concrete wall, or a clean urban backdrop).
+7.  MUST: Expand the generated background to fill the entire frame.
+8.  DO NOT reuse the model, pose, or exact background from the input asset1.
 
 Strict Cropping and Display Rules:
-8.  Model Pose & Gesture: The model stands confidently, in a controlled, intentional pose that clearly displays the garment's silhouette and length without distraction.
-9.  Facial Expression: A neutral-to-serious, powerful expression; a confident, direct gaze at the camera or a strong profile. Project a modern, fashion-forward attitude—avoid excessive AI-stylization or unnatural smiles.
-10. Cropping Adherence: The framing must be strict and product-focused.
-Tops (e.g., Jackets, Shirts, Blouses): Upper body focus. Crop the frame from the waist or upper hips up to the base of the neck, intentionally excluding the model's head and face to keep focus on the garment.
-Bottoms (e.g., Pants, Skirts, Shorts): Lower body focus. Crop the frame from just above the waistband down to the feet, showing only the lower torso and legs.
-Full Garments (e.g., Dresses, Jumpsuits, Costumes): Full body shot, head-to-toe, to display the entire silhouette.
+9.  Model Pose & Gesture: The model stands confidently in a controlled, intentional pose that clearly displays the product at authentic 1:1 physical scale without distraction.
+10. Facial Expression: A neutral-to-serious, powerful expression; a confident, direct gaze at the camera or a strong profile. Project a modern, fashion-forward attitude—avoid excessive AI-stylization or unnatural smiles.
+11. Cropping Adherence:
+Tops (e.g., Jackets, Coats, Shirts, Blouses): Upper body focus showcasing the garment's drape and tailoring.
+Bottoms (e.g., Pants, Skirts, Shorts): Lower body focus from waist down to feet.
+Full Garments (e.g., Dresses, Jumpsuits): Three-quarter or full body shot to display the silhouette.
+Small Accessories / Perfumes / Cosmetics: Medium close-up portrait framing so the palm-sized item is crisp and detailed without inflating its physical size.
 
 Art Style:
-11. Art Style: Clean, crisp editorial photography. Use bright, even, and professional lighting (like a single softbox or reflector) to eliminate harsh shadows and make the garment's color and features pop. The composition must be minimalist, well-framed, and emphasize the product's specific design details.
+12. Art Style: Clean, crisp editorial photography. Use bright, even, and professional lighting (like a single softbox or reflector) to eliminate harsh shadows and make the product's color and features pop.
 `,
         image_slots: [{asset_name: 'asset1', is_static: false}],
         text_variables: [],
@@ -126,7 +131,7 @@ Art Style:
                     Generate one image ad. Create a clean, professional, and visually appealing layout that follows modern design principles. The layout should complement the product and brand identity.
                 NON-NEGOTIABLE DESIGN RULES:
                     1.  BACKGROUND FIRST: Create a new, clean, professional background for the ad. The background's color scheme and style MUST be exclusively derived from the provided brand style guide (Asset 2).
-                    2.  PRODUCT PLACEMENT: Generate no more than two human models from {{model_from_country}} using the product in a daily life use case. Expertly cut out the product from the product photo and place it onto the new background. The product must be the clear focal point, big and eye catching, but it must NOT cover more than 50% of the total ad space to ensure a clean layout. Add original product image (Asset 1) to the bottom right corner in a small way.
+                    2.  PRODUCT PLACEMENT & REALISTIC PHYSICAL SCALE: Generate no more than two human models from {{model_from_country}} using the product in a daily life use case. The product must be the clear visual focal point through sharp focus, lighting, and medium close-up camera framing, while strictly maintaining 100% realistic real-world physical scale relative to the human hand and body (CRITICAL: NEVER make a perfume bottle, cosmetic, or handheld product oversized or giant relative to the model's hand; a bottle/cosmetic must fit naturally in one palm at authentic 8–12 cm real-world dimensions). Optionally display a clean studio packshot inset of Asset 1 in the bottom-right corner.
                     3.  STRICT SEPARATION (CRITICAL): The text elements and the product image MUST NOT overlap under any circumstances. There must be clear, visible space between the product and all text. Position the text in a dedicated area (e.g., to the side, above, or below the product)
                     4.  BRAND IDENTITY (CRITICAL):
                         - Colors: The ENTIRE ad's color palette (background, text, graphics) MUST strictly use the colors found in the guide (Asset 2).
@@ -144,9 +149,9 @@ Art Style:
                         - No watermarks or artifacts.
                         - The product from the brand style guide (Asset 2) MUST NOT be present on the result image.
                         - All text must be perfectly legible. Number should be highlighted and different from other words.
-                        - Only one Logo presents and MUST be at the top left corner of the image. The logo should not be from the product photo.
+                        - Only one Logo presents and MUST be at the top right corner of the image with clean margin. The logo should not be from the product photo.
                         - ABSOLUTELY NO text from the brand style guide (Asset 2) should be present on result images.
-                        - The product (Asset 1) should be exactly the same as provided.
+                        - The product (Asset 1) should be exactly the same as provided and strictly proportional to the human hand/body.
                         - Models from the brand style guide (Asset 2) MUST NOT be present on the result images.
                         - The product image added to the bottom right should use the product image provided (Asset 1)
 
@@ -203,7 +208,7 @@ Art Style:
                     ·   You MUST identify and accurately extract any logo present in the style reference image (Asset 1).
                     ·   This extracted logo MUST be integrated seamlessly and tastefully onto the new promotional graphic.
                     ·   The logo's placement should be professional, respecting visual hierarchy, and should not obscure key elements like the model's face or the main product.
-                    ·   The logo MUST be placed at top left corner of the result image.
+                    ·   The logo MUST be placed at the top right corner of the result image.
 
                 2.  Text Content:
                     ·   It must legibly include the following text elements. Any numbers in the headline or feature should be highlighted (e.g., larger font, bold, different color, or a combination). DO NOT use '*' for highlighting.
@@ -214,17 +219,17 @@ Art Style:
                 3.  Human Model and Product Interaction:
                     ·   It is absolutely critical that the image features a real human model representative of the specified region: {{model_from_country}}. Pay close attention to this requirement to ensure accurate and respectful representation.
                     ·   The model should be realistically using, holding, or presenting "Product 1" (Asset 2).
-                    ·   Crucially, "Product 1" (Asset 2) itself must be large and a primary focal point of the interaction, not just an accessory. It should be clearly visible and highlighted.
+                    ·   Crucially, "Product 1" (Asset 2) must be the primary visual focal point of the interaction through focus and framing, while strictly maintaining authentic real-world physical scale relative to the model's hand and body (NEVER artificially oversize handheld bottles or cosmetics).
 
                 4.  Product Display:
-                    ·   All three products must be large, prominent, and clearly visible** in the final graphic.
+                    ·   All three products must be clearly visible and sharply detailed in the final graphic.
                     ·   "Product 1" is featured with the model as described above.
-                    ·   ALL "Product 1" (Asset 2)and "Product 2" (Asset 3)and "Product 3" (Asset 4) MUST each be displayed in their own separate, large, and prominent placeholders. The products inside these placeholders should be the main focus of their respective areas, displayed clearly and at a large scale.
+                    ·   ALL "Product 1" (Asset 2)and "Product 2" (Asset 3)and "Product 3" (Asset 4) MUST each be displayed in their own separate, prominent showcase frames/pedestals.
 
                 5.  Strict Text Rule:
                     ·   DO NOT add any extra text to the result images other than the provided Headline, Feature, and Call to Action.
                     ·   The product should be exactly the same as provided.
-                    ·   For result image, there MUST be 3 placeholders containing product in a large and prominent style and a human model with product interaction.
+                    ·   For result image, there MUST be 3 placeholders containing product in a prominent style and a human model with realistic-scale product interaction.
                     ·   Human Model should outside of 3 placeholders presenting Product 1 (Asset 2).
 
                 Do not include the original reference style image in the final output; only use it for styling guidance. The final image should be a high-quality, seamless composition that looks like a professional advertisement.
@@ -277,7 +282,7 @@ Art Style:
                     Generate one image ad. Create a clean, professional, and visually appealing layout that follows modern design principles. The layout should complement the product and brand identity.
                 NON-NEGOTIABLE DESIGN RULES:
                     1.  BACKGROUND FIRST: Create a new, clean, professional background for the ad. The background's color scheme and style MUST be exclusively derived from the provided brand style guide (Asset 2).
-                    2.  PRODUCT PLACEMENT: Generate no more than two human models from {{model_from_country}} using the product in a daily life use case. Expertly cut out the product from the product photo and place it onto the new background. The product must be the clear focal point, big and eye catching, but it must NOT cover more than 50% of the total ad space to ensure a clean layout. Add original product image (Asset 1) to the bottom right corner in a small way.
+                    2.  PRODUCT PLACEMENT & REALISTIC PHYSICAL SCALE: Generate no more than two human models from {{model_from_country}} using the product in a daily life use case. The product must be the clear visual focal point through sharp focus, lighting, and medium close-up camera framing, while strictly maintaining 100% realistic real-world physical scale relative to the human hand and body (CRITICAL: NEVER make a perfume bottle, cosmetic, or handheld product oversized or giant relative to the model's hand; a bottle/cosmetic must fit naturally in one palm at authentic 8–12 cm real-world dimensions). Optionally display a clean studio packshot inset of Asset 1 in the bottom-right corner.
                     3.  STRICT SEPARATION (CRITICAL): The text elements and the product image MUST NOT overlap under any circumstances. There must be clear, visible space between the product and all text. Position the text in a dedicated area (e.g., to the side, above, or below the product)
                     4.  BRAND IDENTITY (CRITICAL):
                         - Colors: The ENTIRE ad's color palette (background, text, graphics) MUST strictly use the colors found in the guide (Asset 2).
@@ -295,9 +300,9 @@ Art Style:
                         - No watermarks or artifacts.
                         - The product from the brand style guide (Asset 2) MUST NOT be present on the result image.
                         - All text must be perfectly legible. Number should be highlighted and different from other words.
-                        - Only one Logo presents and MUST be at the top left corner of the image. The logo should not be from the product photo.
+                        - Only one Logo presents and MUST be at the top right corner of the image with clean margin. The logo should not be from the product photo.
                         - ABSOLUTELY NO text from the brand style guide (Asset 2) should be present on result images.
-                        - The product (Asset 1) should be exactly the same as provided.
+                        - The product (Asset 1) should be exactly the same as provided and strictly proportional to the human hand/body.
                         - Models from the brand style guide (Asset 2) MUST NOT be present on the result images.
                         - The product image added to the bottom right should use the product image provided (Asset 1)
 
@@ -480,7 +485,7 @@ Follow these rules meticulously.
 - The final ad must be a new creation inspired only by the *style* of ASSET 2.
 
 ### 2. Image Integration (ASSET 1)
-- **If ASSET 1 is a Product Photo (on a simple background):** Cleanly isolate the product and place it into your new ad composition.
+- **If ASSET 1 is a Product Photo (on a simple background):** Cleanly isolate the product and place it into your new ad composition at authentic real-world physical proportions (never artificially oversized relative to any person or prop).
 - **If ASSET 1 is a Lifestyle Photo:** Your goal is to create a visually engaging lifestyle ad that promotes the product within the photo by using one of the two methods below:
   - ** Method 1:** Outpainting.** Seamlessly extend the photo's actual content (outpainting) to fill the relevant space or entire canvas. Make it look like one continuous photo.
   - ** Method 2:** If outpainting is not feasible or looks unnatural with the provided Brand Guide/Ad Template (ASSET 2), you may creatively isolate the key person along with the product, and use graphical elements, colors, and textures inspired by the "Brand Style Guide/Ad Template" (ASSET 2) to create a cohesive, well-designed ad.
@@ -488,9 +493,9 @@ Follow these rules meticulously.
 
 ### 3. Logo Integration (ASSET 3)
 - **CRITICAL RULE:** Treat ASSET 3 (the Brand Logo) as an immutable digital asset. It MUST be placed directly onto the final ad without ANY modification.
-- **DO NOT RE-DRAW, RE-INTERPRET, OR TRACE THE LOGO.** You are strictly forbidden from altering the logo's pixels. This includes its colors, shape, proportions, and design elements. It must be a perfect copy.
-- **VISIBILITY IS KEY (CRITICAL):** Place the logo in a professional, standard location (e.g., a corner). The logo **must** be clearly legible. To ensure this, it must have high contrast against its immediate background. If the logo has light-colored elements (like white text) that might blend into a light background, you MUST place it on a darker area of the ad.
-- Ensure the logo is legible but not dominant, occupying roughly 5-10% of the ad area.
+- **DO NOT RE-DRAW, RE-INTERPRET, OR TRACE THE LOGO.** You are strictly forbidden from altering the logo's pixels. This includes its colors, shape, proportions, and design elements. It must be a perfect copy with a 100% transparent background and no rectangular box.
+- **VISIBILITY IS KEY (CRITICAL):** Place the logo cleanly in the **top-right corner** with balanced margins (or an upper corner with maximum contrast). The logo **must** be clearly legible against its immediate background.
+- Ensure the logo is legible but not dominant, occupying roughly 10-15% of the canvas width.
 
 ### 4. Text Integration
 

@@ -44,9 +44,9 @@ import {
 import {TEMPLATES} from '../data/templates';
 
 const LOGO_POSITIONS = [
-  {id: 'top-left', labelZh: '↖ 左上角', labelEn: '↖ Top Left', promptDesc: 'top-left corner with clean margin'},
+  {id: 'top-left', labelZh: '↖ 左上角', labelEn: '↖ Top Left', promptDesc: 'top-left corner with clean margin from edges'},
   {id: 'top-center', labelZh: '↑ 顶部居中', labelEn: '↑ Top Center', promptDesc: 'top-center header area'},
-  {id: 'top-right', labelZh: '↗ 右上角', labelEn: '↗ Top Right', promptDesc: 'top-right corner with clean margin'},
+  {id: 'top-right', labelZh: '↗ 右上角 (推荐)', labelEn: '↗ Top Right (Recommended)', promptDesc: 'top-right corner with clean breathing margin from the top and right edges, never overlapping the model or product'},
   {id: 'bottom-left', labelZh: '↙ 左下角', labelEn: '↙ Bottom Left', promptDesc: 'bottom-left corner with clean margin'},
   {id: 'bottom-center', labelZh: '↓ 底部居中', labelEn: '↓ Bottom Center', promptDesc: 'bottom-center signature position'},
   {id: 'bottom-right', labelZh: '↘ 右下角', labelEn: '↘ Bottom Right', promptDesc: 'bottom-right corner with clean margin'},
@@ -99,7 +99,7 @@ export const CreationPageComponent = defineComponent({
     const stepMeta = reactive<
       Record<string, {dimensions: string; durationSec: string; compareBase: boolean}>
     >({});
-    const logoPosition = ref('bottom-center');
+    const logoPosition = ref('top-right');
     const logoScale = ref('balanced');
     const previewImageFile = ref<File | null>(null);
     const previewImagePreview = ref<string | null>(null);
@@ -410,13 +410,18 @@ export const CreationPageComponent = defineComponent({
             '\n\n[Model & Style Reference Instruction: An additional reference image has been provided as the last image input. Use the person/model appearance, pose, and outfit styling from that reference image as inspiration, while strictly featuring and preserving the primary product from the first image input (asset1).]';
         }
 
+        if (index === 0) {
+          promptToSend +=
+            '\n\n[Strict Real-World Physical Scale & Ergonomics Rule: Maintain 100% authentic real-world physical dimensions and anatomical proportions between the product and any human model. Small handheld items (such as perfume bottles, skincare serum droppers, lipsticks, candles, coffee cups, watches, or sunglasses) MUST remain true to their real-world palm-sized scale (e.g., a 50ml–100ml perfume or serum bottle is only 8–12 cm tall and fits delicately inside a single human palm or between fingers — NEVER oversize, inflate, or render it as a giant magnum bottle larger than a human hand). To make a small product prominent and legible, bring the camera closer (e.g., medium close-up portrait framing from chest up with shallow depth of field) rather than enlarging the object relative to the model. Leave clean negative space in the top-right corner for brand logo placement.]';
+        }
+
         if (index === 1) {
           const posObj =
             LOGO_POSITIONS.find((p) => p.id === logoPosition.value) ||
-            LOGO_POSITIONS[4];
+            LOGO_POSITIONS[2];
           const scaleObj =
             LOGO_SCALES.find((s) => s.id === logoScale.value) || LOGO_SCALES[1];
-          promptToSend += `\n\n[Designer Layout Guidance: Place the transparent brand logo from asset2 cleanly in the ${posObj.promptDesc} at a ${scaleObj.promptDesc}, preserving 100% of the transparent background with no rectangular box around the logo.]`;
+          promptToSend += `\n\n[Designer Layout Guidance: Place the transparent brand logo from asset2 cleanly in the ${posObj.promptDesc} at a ${scaleObj.promptDesc}, preserving 100% of the transparent background with no rectangular box around the logo, and ensuring it sits in clean upper-right negative space (or selected corner) without touching the model's head or product.]`;
         }
 
         parts.push({text: promptToSend});

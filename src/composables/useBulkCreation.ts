@@ -366,6 +366,14 @@ export function useBulkCreation(
             }
           }
 
+          if (index === 0) {
+            promptForStep +=
+              '\n\n[Strict Real-World Physical Scale & Ergonomics Rule: Maintain 100% authentic real-world physical dimensions and anatomical proportions between the product and any human model. Small handheld items (perfume bottles, skincare serums, lipsticks, candles, coffee cups, watches, sunglasses) MUST remain true to their real-world palm-sized scale (8–12 cm tall, fitting delicately inside one hand — NEVER oversize or render as a giant bottle). Use a closer medium close-up portrait framing to showcase small product details naturally, and leave clean negative space in the top-right corner for brand logo placement.]';
+          } else if (index === 1) {
+            promptForStep +=
+              '\n\n[Designer Layout Guidance: Place the transparent brand logo cleanly in the top-right corner with balanced margins (~15% of canvas width), preserving 100% of the transparent background with no rectangular box, never overlapping the model or product.]';
+          }
+
           parts.push({text: promptForStep});
 
           let response;
