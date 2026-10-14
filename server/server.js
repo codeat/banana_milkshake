@@ -332,6 +332,8 @@ app.post('/generate-content', async (req, res) => {
       const part = candidate?.content?.parts?.find((p) => p.inlineData) || candidate?.content?.parts?.[0];
       if (part?.inlineData?.data) {
         outputSizeBytes = Math.round((part.inlineData.data.length * 3) / 4);
+      } else if (part?.text) {
+        outputSizeBytes = Buffer.byteLength(part.text, 'utf8');
       }
     } catch (_) {}
 
@@ -429,7 +431,7 @@ app.get('/api/logs', (req, res) => {
       gcpProject: process.env.GOOGLE_CLOUD_PROJECT || 'panliuyang-ramp-up-project-01',
       gcpLocation: process.env.GOOGLE_CLOUD_LOCATION || 'global',
       activeImageModel: process.env.DEFAULT_IMAGE_MODEL || 'gemini-nano-banana-2.1',
-      activeTextModel: process.env.DEFAULT_TEXT_MODEL || 'gemini-3.8-flash',
+      activeTextModel: process.env.DEFAULT_TEXT_MODEL || 'gemini-4-argon',
       cloudRunRevision: process.env.K_REVISION || 'local-dev',
       uptimeSeconds: Math.floor(process.uptime()),
     },

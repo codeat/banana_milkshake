@@ -522,14 +522,18 @@ export const CreationPageComponent = defineComponent({
         if (useVertexAi) {
           const response = await callGenAIApi({
             model: DEFAULT_TEXT_MODEL,
+            stepTag: 'AI Creative Director',
             contents: {
               role: 'user',
               parts: [imagePart, textPart],
             },
           });
           // When using the server proxy, the response is plain JSON, so we can't use the .text getter.
-          step.prompt =
-            response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          const parts = response.candidates?.[0]?.content?.parts || [];
+          const textPartOut =
+            parts.find((p: {thought?: boolean; text?: string}) => !p.thought && p.text) ||
+            parts[0];
+          step.prompt = textPartOut?.text ? textPartOut.text.trim() : '';
         } else {
           const response = await ai.models.generateContent({
             model: DEFAULT_TEXT_MODEL,

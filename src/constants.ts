@@ -29,7 +29,7 @@ export const useVertexAi = process.env.USE_VERTEX_AI;
  * Can be overridden by the `DEFAULT_TEXT_MODEL` environment variable.
  */
 export const DEFAULT_TEXT_MODEL =
-  process.env.DEFAULT_TEXT_MODEL || 'gemini-3.8-flash';
+  process.env.DEFAULT_TEXT_MODEL || 'gemini-4-argon';
 /**
  * The default model to use for image generation.
  * Can be overridden by the `DEFAULT_IMAGE_MODEL` environment variable.

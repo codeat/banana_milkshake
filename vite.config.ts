@@ -80,7 +80,7 @@ const viteConfig = defineConfig(({mode}) => {
       ),
       'process.env.USE_VERTEX_AI': true,
       'process.env.DEFAULT_TEXT_MODEL': JSON.stringify(
-        env.DEFAULT_TEXT_MODEL || 'gemini-3.8-flash',
+        env.DEFAULT_TEXT_MODEL || 'gemini-4-argon',
       ),
       'process.env.DEFAULT_IMAGE_MODEL': JSON.stringify(
         env.DEFAULT_IMAGE_MODEL || 'gemini-nano-banana-2.1',

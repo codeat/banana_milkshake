@@ -226,7 +226,9 @@ export const DiagnosticsModalComponent = defineComponent({
               </div>
               <div class="bg-white p-2.5 rounded-xl border border-gray-200 shadow-2xs">
                 <div class="text-[11px] text-gray-500 font-medium">默认模型</div>
-                <div class="text-xs font-bold text-gray-800 truncate mt-1">nano-banana-2.1</div>
+                <div class="text-[11px] font-bold text-gray-800 truncate mt-1" title={`生图: ${env.value?.activeImageModel || 'gemini-nano-banana-2.1'} | 推理: ${env.value?.activeTextModel || 'gemini-4-argon'}`}>
+                  nano-banana-2.1 · {env.value?.activeTextModel || 'gemini-4-argon'}
+                </div>
               </div>
             </div>
 
